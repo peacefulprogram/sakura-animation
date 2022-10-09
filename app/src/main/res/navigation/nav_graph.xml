@@ -30,6 +30,9 @@
         <action
             android:id="@+id/action_animeDetailFragment_to_loadVideoUrlFragment"
             app:destination="@id/loadVideoUrlFragment" />
+        <action
+            android:id="@+id/action_animeDetailFragment_self"
+            app:destination="@id/animeDetailFragment" />
     </fragment>
     <fragment
         android:id="@+id/loadVideoUrlFragment"

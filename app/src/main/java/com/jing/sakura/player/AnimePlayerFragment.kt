@@ -3,22 +3,15 @@ package com.jing.sakura.player
 import android.content.Context
 import android.os.Bundle
 import android.support.v4.media.session.MediaSessionCompat
-import android.view.View
-import androidx.fragment.app.viewModels
 import androidx.leanback.app.VideoSupportFragment
 import androidx.leanback.app.VideoSupportFragmentGlueHost
 import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.ForwardingPlayer
 import com.google.android.exoplayer2.MediaItem
-import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ext.leanback.LeanbackPlayerAdapter
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
-import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.source.hls.DefaultHlsDataSourceFactory
 import com.google.android.exoplayer2.source.hls.HlsMediaSource
-import com.google.android.exoplayer2.upstream.DefaultDataSource
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
-import com.google.android.exoplayer2.util.MimeTypes
 import java.time.Duration
 
 class AnimePlayerFragment : VideoSupportFragment() {
@@ -69,13 +62,8 @@ class AnimePlayerFragment : VideoSupportFragment() {
         ExoPlayer.Builder(context).build().apply {
             prepareGlue(this)
 
-            val mediaItem = MediaItem.Builder()
-                .setMimeType(MimeTypes.APPLICATION_M3U8)
-                .setUri(videoUrl)
-                .build()
-            addListener(object : Player.Listener {
-
-            })
+            playWhenReady = true
+            val mediaItem = MediaItem.fromUri(videoUrl)
             val source =
                 HlsMediaSource.Factory(DefaultHlsDataSourceFactory(DefaultHttpDataSource.Factory()))
                     .createMediaSource(mediaItem)

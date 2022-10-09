@@ -6,15 +6,25 @@ import androidx.leanback.widget.ImageCardView
 import androidx.leanback.widget.Presenter
 import coil.load
 import coil.size.Scale
+import com.jing.sakura.R
 import com.jing.sakura.data.AnimeData
+import com.jing.sakura.extend.getColorWithAlpha
 
-class AnimeCardPresenter(val cardWidth: Int, val cardHeight: Int) : Presenter() {
+class AnimeCardPresenter(
+    private val cardWidth: Int,
+    private val cardHeight: Int,
+    private val infoBgColor: Int? = null
+) : Presenter() {
+
 
     override fun onCreateViewHolder(parent: ViewGroup?): ViewHolder {
         val imageCardView = ImageCardView(parent!!.context).apply {
             isFocusable = true
             isFocusableInTouchMode = true
-            cardType = BaseCardView.CARD_TYPE_INFO_UNDER
+            cardType = BaseCardView.CARD_TYPE_INFO_OVER
+            setInfoAreaBackgroundColor(
+                infoBgColor ?: parent.context.getColor(R.color.gray900).getColorWithAlpha(0.5f)
+            )
             mainImageView.layoutParams = BaseCardView.LayoutParams(cardWidth, cardHeight)
         }
         return ViewHolder(imageCardView)

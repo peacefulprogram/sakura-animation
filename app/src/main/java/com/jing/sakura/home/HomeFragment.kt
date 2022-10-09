@@ -2,9 +2,8 @@ package com.jing.sakura.home
 
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
-import android.util.Log
 import android.view.View
-import androidx.core.content.ContextCompat
+import android.view.ViewGroup
 import androidx.fragment.app.viewModels
 import androidx.leanback.app.BackgroundManager
 import androidx.leanback.app.BrowseSupportFragment
@@ -81,7 +80,13 @@ class HomeFragment : BrowseSupportFragment() {
     }
 
     private fun renderData(homePageData: HomePageData) {
-        val adapter = ArrayObjectAdapter(ListRowPresenter())
+        val adapter = ArrayObjectAdapter(object : ListRowPresenter() {
+            override fun createRowViewHolder(parent: ViewGroup?): RowPresenter.ViewHolder {
+                return super.createRowViewHolder(parent).apply {
+                    (view as ListRowView).gridView.setItemSpacing(20)
+                }
+            }
+        })
         val cardWidth = resources.getDimension(R.dimen.poster_width).toInt()
         val cardHeight = resources.getDimension(R.dimen.poster_height).toInt()
 

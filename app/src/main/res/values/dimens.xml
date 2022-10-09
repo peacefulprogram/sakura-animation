@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="poster_width">100dp</dimen>
-    <dimen name="poster_height">140dp</dimen>
+    <dimen name="poster_width">140dp</dimen>
+    <dimen name="poster_height">190dp</dimen>
 </resources>
