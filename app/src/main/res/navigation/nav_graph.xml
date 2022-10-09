@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/splashFragment">
+
+    <fragment
+        android:id="@+id/splashFragment"
+        android:name="com.jing.sakura.splash.SplashFragment"
+        android:label="SplashFragment" >
+        <action
+            android:id="@+id/action_splashFragment_to_homeFragment"
+            app:destination="@id/homeFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/homeFragment"
+        android:name="com.jing.sakura.home.HomeFragment"
+        android:label="HomeFragment" >
+        <action
+            android:id="@+id/action_homeFragment_to_animeDetailFragment"
+            app:destination="@id/animeDetailFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/animeDetailFragment"
+        android:name="com.jing.sakura.detail.AnimeDetailFragment"
+        android:label="AnimeDetailFragment" >
+        <argument
+            android:name="detailUrl"
+            app:argType="string" />
+        <action
+            android:id="@+id/action_animeDetailFragment_to_loadVideoUrlFragment"
+            app:destination="@id/loadVideoUrlFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/loadVideoUrlFragment"
+        android:name="com.jing.sakura.player.LoadVideoUrlFragment"
+        android:label="LoadVideoUrlFragment" >
+        <argument
+            android:name="episodeUrl"
+            app:argType="string" />
+        <argument
+            android:name="animeTitle"
+            app:argType="string" />
+        <action
+            android:id="@+id/action_loadVideoUrlFragment_to_animePlayerFragment"
+            app:destination="@id/animePlayerFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/animePlayerFragment"
+        android:name="com.jing.sakura.player.AnimePlayerFragment"
+        android:label="AnimePlayerFragment" >
+        <argument android:name="videoUrl"
+            app:argType="string" />
+        <argument
+            android:name="title"
+            app:argType="string" />
+    </fragment>
+</navigation>
