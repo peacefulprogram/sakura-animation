@@ -5,5 +5,6 @@ data class AnimeData(
     val title: String,
     val currentEpisode: String = "",
     val imageUrl: String = "",
-    val currentUpdate: Boolean = false
+    val description: String = "",
+    val tags: String = ""
 )

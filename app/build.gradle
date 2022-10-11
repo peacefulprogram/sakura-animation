@@ -19,7 +19,9 @@ android {
         versionName "1.0"
 
     }
-
+    packagingOptions {
+        exclude 'META-INF/*'
+    }
     buildTypes {
         release {
             minifyEnabled false
@@ -66,4 +68,16 @@ dependencies {
 
     implementation 'androidx.palette:palette-ktx:1.0.0'
 
+    // https://mvnrepository.com/artifact/com.google.zxing/core
+    implementation 'com.google.zxing:core:3.5.0'
+
+    def ktor_version = "2.1.2"
+
+    implementation "io.ktor:ktor-server-core:$ktor_version"
+    implementation "io.ktor:ktor-server-netty:$ktor_version"
+    implementation "io.ktor:ktor-server-websockets:$ktor_version"
+    implementation "io.ktor:ktor-serialization-kotlinx-json:$ktor_version"
+
+    implementation "androidx.paging:paging-common-ktx:3.1.1"
+    implementation "androidx.paging:paging-runtime-ktx:3.1.1"
 }

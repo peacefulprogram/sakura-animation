@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>樱花动漫输入</title>
+</head>
+
+<body>
+    <div style="display: flex;">
+        <input type="text" id="input" style="flex-grow: 1;margin-right: 20px;" placeholder="输入内容" readonly>
+        <button id="submit" disabled>提交</button>
+    </div>
+    <div id="message"></div>
+    <script>
+        let search = location.search || ''
+        if (search.startsWith('?')) {
+            search = search.substring(1)
+        }
+        let id;
+        const params = search.split('&')
+        params.some(param => {
+            const parts = param.split('=')
+            if (parts.length === 2 && parts[0] === 'id') {
+                id = parts[1]
+                return true
+            }
+            return false
+        })
+        if (!id) {
+            document.body.innerHTML = `<div>
+                参数错误    
+            </div>`
+        } else {
+            const messageContainer = document.getElementById('message')
+            const inputEl = document.getElementById('input')
+            const btn = document.getElementById('submit')
+
+            messageContainer.innerText = '连接app中...'
+            const wsUrl = 'ws://' + location.host + '/' + id
+            const ws = new WebSocket(wsUrl)
+            ws.onopen = function () {
+                inputEl.removeAttribute('readonly')
+                btn.removeAttribute('disabled')
+            }
+            const inputHandler = function (event) {
+                ws.send(JSON.stringify({
+                    operation: 'INPUT',
+                    content: this.value
+                }))
+            }
+
+            const submitHandler = function () {
+                ws.send(JSON.stringify({
+                    operation: 'SUBMIT'
+                }))
+                inputEl.setAttribute('readonly', true)
+                btn.setAttribute('disabled', true)
+            }
+            inputEl.addEventListener('input', inputHandler)
+            btn.addEventListener('click', submitHandler)
+            ws.onclose = function (event) {
+                inputEl.removeEventListener('input', inputHandler)
+                btn.removeEventListener('click', submitHandler)
+                document.getElementById('message').innerText = '连接已关闭,原因:' + event.reason
+            }
+
+        }
+    </script>
+</body>
+
+</html>

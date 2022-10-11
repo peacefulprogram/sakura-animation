@@ -19,6 +19,9 @@
         <action
             android:id="@+id/action_homeFragment_to_animeDetailFragment"
             app:destination="@id/animeDetailFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_searchFragment"
+            app:destination="@id/searchFragment" />
     </fragment>
     <fragment
         android:id="@+id/animeDetailFragment"
@@ -56,6 +59,25 @@
             app:argType="string" />
         <argument
             android:name="title"
+            app:argType="string" />
+    </fragment>
+    <fragment
+        android:id="@+id/searchFragment"
+        android:name="com.jing.sakura.search.SearchFragment"
+        android:label="SearchFragment" >
+        <action
+            android:id="@+id/action_searchFragment_to_searchResultFragment"
+            app:destination="@id/searchResultFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/searchResultFragment"
+        android:name="com.jing.sakura.search.SearchResultFragment"
+        android:label="SearchResultFragment" >
+        <action
+            android:id="@+id/action_searchResultFragment_to_animeDetailFragment"
+            app:destination="@id/animeDetailFragment" />
+        <argument
+            android:name="keyword"
             app:argType="string" />
     </fragment>
 </navigation>

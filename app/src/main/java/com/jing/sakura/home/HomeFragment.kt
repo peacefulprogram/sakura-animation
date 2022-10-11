@@ -2,6 +2,7 @@ package com.jing.sakura.home
 
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
+import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.viewModels
@@ -43,8 +44,20 @@ class HomeFragment : BrowseSupportFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        view.setOnKeyListener { _, keyCode, _ ->
+            println(keyCode)
+            if (keyCode == KeyEvent.KEYCODE_MENU) {
+                viewModel.loadData()
+                true
+            } else {
+                false
+            }
+        }
         observeHomePageData()
         setupItemClickListener()
+        setOnSearchClickedListener(View.OnClickListener {
+            findNavController().navigate(HomeFragmentDirections.actionHomeFragmentToSearchFragment())
+        })
 //        setDynamicBackground()
     }
 

@@ -2,6 +2,9 @@ package com.jing.sakura.repo
 
 import com.jing.sakura.Constants.SAKURA_URL
 import com.jing.sakura.data.*
+import com.jing.sakura.extend.encodeUrl
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.Jsoup
@@ -68,8 +71,7 @@ class WebPageRepository @Inject constructor(
                     url = animeUrl,
                     title = animeName,
                     currentEpisode = episode,
-                    imageUrl = imgSrc,
-                    currentUpdate = false
+                    imageUrl = imgSrc
                 )
             }
             seriesList.add(NamedValue(title, seriesData))
@@ -156,6 +158,42 @@ class WebPageRepository @Inject constructor(
         )
 
     }
+
+    suspend fun searchAnimation(keyword: String, page: Int, pageSize: Int = 24): SearchPageData =
+        withContext(Dispatchers.IO) {
+            val queryParts = mutableListOf("kw=${keyword.encodeUrl()}")
+            if (page > 1) {
+                queryParts.add("pagesize=${pageSize}")
+                queryParts.add("pageindex=${page}")
+            } else {
+                queryParts.add("ex=1")
+            }
+            val document =
+                fetchDocument("$SAKURA_URL/s_all?${queryParts.joinToString("&")}")!!
+            val hasNextPage = document.select(".pages")[0].children().find {
+                it.text().contains("下一页")
+            } != null
+
+            val animeList = document.select(".lpic >ul > li").map { li ->
+                val url = li.child(0).absUrl("href")
+                val animeName = li.child(1).text()
+                val episode = li.child(2).text()
+                val tags = li.child(3).text()
+                val description = li.child(4).text()
+
+                AnimeData(
+                    url = url,
+                    title = animeName,
+                    currentEpisode = episode,
+                    imageUrl = li.select("img")[0].absUrl("src"),
+                    description = description,
+                    tags = tags
+                )
+            }
+
+            SearchPageData(page = page, hasNextPage = hasNextPage, animeList = animeList)
+        }
+
 
     private suspend fun fetchDocument(url: String): Document? {
         return okHttpClient.newCall(Request.Builder().url(url).get().build())
