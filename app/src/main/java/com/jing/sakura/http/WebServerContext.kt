@@ -1,10 +1,10 @@
 package com.jing.sakura.http
 
 import io.ktor.http.*
-import io.ktor.serialization.kotlinx.*
+import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
-import io.ktor.server.netty.*
+import io.ktor.server.jetty.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
@@ -12,26 +12,21 @@ import io.ktor.websocket.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
 import okhttp3.internal.closeQuietly
 import java.net.InetAddress
 import java.net.NetworkInterface
 import java.net.ServerSocket
-import java.util.*
 
 object WebServerContext {
 
     lateinit var androidContext: android.app.Application
 
-    private val fragmentIdMap: MutableMap<String, WebsocketFrameAwareFragment> =
-        Collections.synchronizedMap(
-            mutableMapOf()
-        )
+    var handlerFragment: WebsocketFrameAwareFragment? = null
+
 
     lateinit var hostIp: String
 
-
-    var server: NettyApplicationEngine? = null
+    var server: ApplicationEngine? = null
 
     var serverPort: Int? = null
 
@@ -42,9 +37,9 @@ object WebServerContext {
             server = if (serverPort == null) {
                 null
             } else {
-                embeddedServer(Netty, serverPort!!) {
+                embeddedServer(Jetty, serverPort!!) {
                     install(WebSockets) {
-                        contentConverter = KotlinxWebsocketSerializationConverter(Json)
+                        contentConverter = JacksonWebsocketContentConverter()
                     }
                     initRouter()
                 }.start(false)
@@ -52,14 +47,14 @@ object WebServerContext {
         }
     }
 
-    fun registerFragment(fragment: WebsocketFrameAwareFragment): String {
-        val id = UUID.randomUUID().toString()
-        fragmentIdMap[id] = fragment
-        return id
+    fun registerFragment(fragment: WebsocketFrameAwareFragment): Unit {
+        handlerFragment = fragment
     }
 
-    fun removeFragment(id: String?) {
-        fragmentIdMap.remove(id)
+    fun removeFragment(fragment: WebsocketFrameAwareFragment?) {
+        if (handlerFragment == fragment) {
+            handlerFragment = null
+        }
     }
 
     private fun Application.initRouter() {
@@ -70,21 +65,20 @@ object WebServerContext {
                 call.respondBytes(bytes = bytes, contentType = ContentType.parse("text/html"))
             }
 
-            webSocket("/{id}") {
-                val id = call.parameters["id"]
-                if (!fragmentIdMap.containsKey(id)) {
-                    close(CloseReason(CloseReason.Codes.TRY_AGAIN_LATER, "监听页面不存在"))
-                    return@webSocket
+            webSocket("/input") {
+                if (handlerFragment == null) {
+                    sendSerialized(WebsocketResponse(false, "无页面监听"))
                 }
-                for (frame in incoming) {
+
+                while (true) {
                     val message = receiveDeserialized<WebsocketIncomingMessage>()
                     val operationType = WebsocketOperation.valueOf(message.operation)
-                    if (!fragmentIdMap.containsKey(id)) {
-                        close(CloseReason(CloseReason.Codes.GOING_AWAY, "页面已关闭"))
-                        return@webSocket
+                    if (handlerFragment == null) {
+                        sendSerialized(WebsocketResponse(false, "无页面监听"))
+                        continue
                     }
                     when (val result =
-                        fragmentIdMap[id]!!.onMessage(operationType, message.content)) {
+                        handlerFragment!!.onMessage(operationType, message.content)) {
                         is WebsocketResult.Success -> sendSerialized(WebsocketResponse(true))
                         is WebsocketResult.Error -> sendSerialized(
                             WebsocketResponse(

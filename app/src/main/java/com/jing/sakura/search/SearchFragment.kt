@@ -24,11 +24,20 @@ import kotlinx.coroutines.launch
 
 class SearchFragment : WebsocketFrameAwareFragment() {
 
-    private lateinit var randomId: String
 
     private lateinit var viewBinding: SearchFragmentBinding
+
+    override fun onStart() {
+        super.onStart()
+        WebServerContext.registerFragment(this)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        WebServerContext.removeFragment(this)
+    }
+
     override fun onMessage(operation: WebsocketOperation, content: String): WebsocketResult {
-//        viewBinding.keywordEditor.text.
 
         val success = when (operation) {
             WebsocketOperation.SUBMIT -> submitText()
@@ -53,7 +62,6 @@ class SearchFragment : WebsocketFrameAwareFragment() {
             return false
         }
         lifecycleScope.launch(Dispatchers.Main) {
-            // todo: 导航到搜索页
             findNavController().navigate(
                 SearchFragmentDirections.actionSearchFragmentToSearchResultFragment(
                     kw
@@ -72,9 +80,8 @@ class SearchFragment : WebsocketFrameAwareFragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                randomId = WebServerContext.registerFragment(this@SearchFragment)
                 val url =
-                    "http://${WebServerContext.hostIp}:${WebServerContext.serverPort}?id=$randomId"
+                    "http://${WebServerContext.hostIp}:${WebServerContext.serverPort}"
                 launch(Dispatchers.IO) {
                     val bitMatrix = QRCodeWriter().encode(url, BarcodeFormat.QR_CODE, 512, 512)
                     val bitmap = Bitmap.createBitmap(
@@ -92,9 +99,6 @@ class SearchFragment : WebsocketFrameAwareFragment() {
                         viewBinding.qrcode.setImageBitmap(bitmap)
                     }
                 }
-            }
-            repeatOnLifecycle(Lifecycle.State.DESTROYED) {
-                WebServerContext.removeFragment(randomId)
             }
 
         }

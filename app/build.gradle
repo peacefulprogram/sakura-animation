@@ -74,9 +74,9 @@ dependencies {
     def ktor_version = "2.1.2"
 
     implementation "io.ktor:ktor-server-core:$ktor_version"
-    implementation "io.ktor:ktor-server-netty:$ktor_version"
+    implementation "io.ktor:ktor-server-jetty:$ktor_version"
     implementation "io.ktor:ktor-server-websockets:$ktor_version"
-    implementation "io.ktor:ktor-serialization-kotlinx-json:$ktor_version"
+    implementation "io.ktor:ktor-serialization-jackson:$ktor_version"
 
     implementation "androidx.paging:paging-common-ktx:3.1.1"
     implementation "androidx.paging:paging-runtime-ktx:3.1.1"

@@ -11,63 +11,45 @@
 
 <body>
     <div style="display: flex;">
-        <input type="text" id="input" style="flex-grow: 1;margin-right: 20px;" placeholder="输入内容" readonly>
-        <button id="submit" disabled>提交</button>
+        <input type="text" id="input" style="flex-grow: 1;margin-right: 20px;" placeholder="输入内容">
+        <button id="submit">提交</button>
     </div>
     <div id="message"></div>
     <script>
-        let search = location.search || ''
-        if (search.startsWith('?')) {
-            search = search.substring(1)
+        const messageContainer = document.getElementById('message')
+        const inputEl = document.getElementById('input')
+        const btn = document.getElementById('submit')
+
+        messageContainer.innerText = '连接app中...'
+        const wsUrl = 'ws://' + location.host + '/input'
+        const ws = new WebSocket(wsUrl)
+        messageContainer.innerText = '已连接到app'
+        const inputHandler = function (event) {
+            ws.send(JSON.stringify({
+                operation: 'INPUT',
+                content: this.value
+            }))
         }
-        let id;
-        const params = search.split('&')
-        params.some(param => {
-            const parts = param.split('=')
-            if (parts.length === 2 && parts[0] === 'id') {
-                id = parts[1]
-                return true
-            }
-            return false
-        })
-        if (!id) {
-            document.body.innerHTML = `<div>
-                参数错误    
-            </div>`
-        } else {
-            const messageContainer = document.getElementById('message')
-            const inputEl = document.getElementById('input')
-            const btn = document.getElementById('submit')
 
-            messageContainer.innerText = '连接app中...'
-            const wsUrl = 'ws://' + location.host + '/' + id
-            const ws = new WebSocket(wsUrl)
-            ws.onopen = function () {
-                inputEl.removeAttribute('readonly')
-                btn.removeAttribute('disabled')
+        const submitHandler = function () {
+            ws.send(JSON.stringify({
+                operation: 'SUBMIT'
+            }))
+        }
+        ws.onmessage = resp => {
+            const result = JSON.parse(resp.data)
+            if (!result.success) {
+                messageContainer.innerText = '操作失败:' + result.message
+            } else {
+                messageContainer.innerText = ''
             }
-            const inputHandler = function (event) {
-                ws.send(JSON.stringify({
-                    operation: 'INPUT',
-                    content: this.value
-                }))
-            }
-
-            const submitHandler = function () {
-                ws.send(JSON.stringify({
-                    operation: 'SUBMIT'
-                }))
-                inputEl.setAttribute('readonly', true)
-                btn.setAttribute('disabled', true)
-            }
-            inputEl.addEventListener('input', inputHandler)
-            btn.addEventListener('click', submitHandler)
-            ws.onclose = function (event) {
-                inputEl.removeEventListener('input', inputHandler)
-                btn.removeEventListener('click', submitHandler)
-                document.getElementById('message').innerText = '连接已关闭,原因:' + event.reason
-            }
-
+        }
+        inputEl.addEventListener('input', inputHandler)
+        btn.addEventListener('click', submitHandler)
+        ws.onclose = function (event) {
+            inputEl.removeEventListener('input', inputHandler)
+            btn.removeEventListener('click', submitHandler)
+            messageContainer.innerText = '连接已关闭,原因:' + event.reason
         }
     </script>
 </body>
