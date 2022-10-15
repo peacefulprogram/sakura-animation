@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/row_content"
     android:layout_marginBottom="20dp"
+    android:orientation="horizontal"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -19,72 +20,82 @@
         app:layout_constraintTop_toTopOf="parent"
         />
 
-    <TextView
-        android:id="@+id/detail_name"
-        android:layout_width="wrap_content"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
-        android:text="名称"
-        app:layout_constraintLeft_toRightOf="@id/detail_cover_img"
-        app:layout_constraintTop_toTopOf="@+id/detail_cover_img"
-        android:textSize="24sp"
-        android:textFontWeight="700"
-        />
+        android:layout_weight="1"
+        android:paddingStart="24dp"
+        android:layout_marginTop="@dimen/lb_browse_padding_start"
+        android:paddingEnd="@dimen/lb_browse_padding_start"
+        >
 
-    <TextView
-        android:id="@+id/detail_alias"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:text="别名"
-        app:layout_constraintTop_toBottomOf="@id/detail_name"
-        app:layout_constraintLeft_toLeftOf="@id/detail_name"
-        />
+        <TextView
+            android:id="@+id/detail_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="标题"
+            android:textFontWeight="700"
+            android:textSize="24sp"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
-        android:id="@+id/detail_region"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:text="地区"
-        app:layout_constraintTop_toBottomOf="@id/detail_alias"
-        app:layout_constraintLeft_toLeftOf="@id/detail_name"/>
+        <TextView
+            android:id="@+id/detail_alias"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="别名"
+            app:layout_constraintTop_toBottomOf="@id/detail_name"
+            app:layout_constraintLeft_toLeftOf="@id/detail_name"
+            />
 
-    <TextView
-        android:id="@+id/detail_release"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
-        android:text="首映时间"
-        app:layout_constraintTop_toTopOf="@id/detail_region"
-        app:layout_constraintLeft_toRightOf="@id/detail_region"/>
+        <TextView
+            android:id="@+id/detail_region"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="地区"
+            app:layout_constraintTop_toBottomOf="@id/detail_alias"
+            app:layout_constraintLeft_toLeftOf="@id/detail_name"/>
 
-    <TextView
-        android:id="@+id/detail_tags"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="24dp"
-        android:text="标签"
-        app:layout_constraintTop_toTopOf="@id/detail_region"
-        app:layout_constraintLeft_toRightOf="@id/detail_release" />
+        <TextView
+            android:id="@+id/detail_release"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:text="首映时间"
+            app:layout_constraintTop_toTopOf="@id/detail_region"
+            app:layout_constraintLeft_toRightOf="@id/detail_region"/>
 
-    <TextView
-        android:id="@+id/detail_current_episode"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:text="更新"
-        app:layout_constraintTop_toBottomOf="@id/detail_tags"
-        app:layout_constraintLeft_toLeftOf="@id/detail_name"/>
-    <TextView
-        android:id="@+id/detail_desc"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:text="简介"
-        app:layout_constraintLeft_toLeftOf="@id/detail_name"
-        app:layout_constraintTop_toBottomOf="@id/detail_current_episode"
-        android:maxLines="3"
-        android:ellipsize="end"
-        />
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <TextView
+            android:id="@+id/detail_tags"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="24dp"
+            android:text="标签"
+            app:layout_constraintTop_toTopOf="@id/detail_region"
+            app:layout_constraintLeft_toRightOf="@id/detail_release" />
+
+        <TextView
+            android:id="@+id/detail_current_episode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="更新"
+            app:layout_constraintTop_toBottomOf="@id/detail_tags"
+            app:layout_constraintLeft_toLeftOf="@id/detail_name"/>
+        <TextView
+            android:id="@+id/detail_desc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="简介"
+            app:layout_constraintLeft_toLeftOf="@id/detail_name"
+            app:layout_constraintTop_toBottomOf="@id/detail_current_episode"
+            android:maxLines="3"
+            android:ellipsize="end"
+            />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+</LinearLayout>
