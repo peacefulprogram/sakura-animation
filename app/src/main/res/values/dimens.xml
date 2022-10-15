@@ -2,4 +2,5 @@
 <resources>
     <dimen name="poster_width">140dp</dimen>
     <dimen name="poster_height">190dp</dimen>
+    <dimen name="lb_browse_padding_start">10dp</dimen>
 </resources>
