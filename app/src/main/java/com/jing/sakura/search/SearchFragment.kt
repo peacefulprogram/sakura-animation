@@ -47,6 +47,7 @@ class SearchFragment : WebsocketFrameAwareFragment() {
                         content,
                         TextView.BufferType.EDITABLE
                     )
+                    viewBinding.keywordEditor.setSelection(content.length)
                 }
                 true
             }

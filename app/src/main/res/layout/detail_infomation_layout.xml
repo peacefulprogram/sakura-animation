@@ -10,10 +10,11 @@
         android:id="@+id/detail_cover_img"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="24dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="10dp"
         android:minWidth="@dimen/poster_width"
         android:minHeight="@dimen/poster_height"
+        android:scaleType="centerCrop"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         />
@@ -22,11 +23,10 @@
         android:id="@+id/detail_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="24dp"
-        android:layout_marginTop="24dp"
+        android:layout_marginStart="24dp"
         android:text="名称"
         app:layout_constraintLeft_toRightOf="@id/detail_cover_img"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/detail_cover_img"
         android:textSize="24sp"
         android:textFontWeight="700"
         />
@@ -35,50 +35,56 @@
         android:id="@+id/detail_alias"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="24dp"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="10dp"
         android:text="别名"
         app:layout_constraintTop_toBottomOf="@id/detail_name"
-        app:layout_constraintLeft_toRightOf="@id/detail_cover_img"
+        app:layout_constraintLeft_toLeftOf="@id/detail_name"
         />
 
     <TextView
         android:id="@+id/detail_region"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="24dp"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="10dp"
         android:text="地区"
         app:layout_constraintTop_toBottomOf="@id/detail_alias"
-        app:layout_constraintLeft_toRightOf="@id/detail_cover_img"/>
+        app:layout_constraintLeft_toLeftOf="@id/detail_name"/>
 
     <TextView
         android:id="@+id/detail_release"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="24dp"
-        android:layout_marginTop="24dp"
+        android:layout_marginStart="24dp"
         android:text="首映时间"
-        app:layout_constraintTop_toBottomOf="@id/detail_alias"
+        app:layout_constraintTop_toTopOf="@id/detail_region"
         app:layout_constraintLeft_toRightOf="@id/detail_region"/>
 
     <TextView
         android:id="@+id/detail_tags"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
         android:layout_marginLeft="24dp"
         android:text="标签"
-        app:layout_constraintTop_toBottomOf="@id/detail_alias"
+        app:layout_constraintTop_toTopOf="@id/detail_region"
         app:layout_constraintLeft_toRightOf="@id/detail_release" />
 
     <TextView
         android:id="@+id/detail_current_episode"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:layout_marginLeft="24dp"
+        android:layout_marginTop="10dp"
         android:text="更新"
         app:layout_constraintTop_toBottomOf="@id/detail_tags"
-        app:layout_constraintLeft_toRightOf="@id/detail_cover_img"/>
+        app:layout_constraintLeft_toLeftOf="@id/detail_name"/>
+    <TextView
+        android:id="@+id/detail_desc"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="简介"
+        app:layout_constraintLeft_toLeftOf="@id/detail_name"
+        app:layout_constraintTop_toBottomOf="@id/detail_current_episode"
+        android:maxLines="3"
+        android:ellipsize="end"
+        />
 </androidx.constraintlayout.widget.ConstraintLayout>

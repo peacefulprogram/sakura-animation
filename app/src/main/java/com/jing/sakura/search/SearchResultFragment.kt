@@ -17,8 +17,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.jing.sakura.databinding.SearchResultFragmentBinding
 import com.jing.sakura.extend.dpToPixels
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class SearchResultFragment : Fragment() {
 
     private val viewModel by viewModels<SearchResultViewModel>()

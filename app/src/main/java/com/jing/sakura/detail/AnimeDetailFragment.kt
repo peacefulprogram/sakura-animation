@@ -140,6 +140,7 @@ class DetailInfoRowPresenter : RowPresenter() {
             detailRelease.text = detail.releaseDay
             detailTags.text = detail.tags.joinToString("  ") { it.name }
             detailCurrentEpisode.text = detail.latestEpisode
+            detailDesc.text = detail.description
         }
     }
 

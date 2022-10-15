@@ -8,11 +8,14 @@ import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.jing.sakura.data.AnimeData
 import com.jing.sakura.repo.WebPageRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
-import okhttp3.OkHttpClient
+import javax.inject.Inject
 
-class SearchResultViewModel :
-    ViewModel() {
+@HiltViewModel
+class SearchResultViewModel @Inject constructor(
+    private val webPageRepository: WebPageRepository
+) : ViewModel() {
 
     private fun getPagingDataFlow(keyword: String): Flow<PagingData<AnimeData>> {
         return Pager(
@@ -20,7 +23,7 @@ class SearchResultViewModel :
             pagingSourceFactory = {
                 AnimeDataPagingSource(
                     keyword,
-                    WebPageRepository(OkHttpClient())
+                    webPageRepository
                 )
             }
         ).flow
