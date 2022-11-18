@@ -5,7 +5,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import okhttp3.OkHttpClient
+import okhttp3.*
 import javax.inject.Singleton
 
 
@@ -15,7 +15,22 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient = OkHttpClient.Builder().build()
+    fun provideOkHttpClient(): OkHttpClient {
+        return OkHttpClient.Builder()
+            .addInterceptor(Interceptor { chain ->
+                chain.request()
+                    .newBuilder()
+                    .header(
+                        "user-agent",
+                        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36"
+                    )
+                    .build()
+                    .let {
+                        chain.proceed(it)
+                    }
+            })
+            .build()
+    }
 
     @Provides
     @Singleton

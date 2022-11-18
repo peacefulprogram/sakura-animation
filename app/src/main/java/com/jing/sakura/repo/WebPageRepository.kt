@@ -27,26 +27,6 @@ class WebPageRepository @Inject constructor(
 
     suspend fun fetchHomePage(): HomePageData {
         val document = fetchDocument(SAKURA_URL)!!
-        val timeLineList = document.select(".tlist ul").mapIndexed { index, ul ->
-            val name = "周" + weekDays[index]
-            val animeList = ul.children().map { li ->
-                val episode: String
-                val url: String
-                val animeName = li.child(1).text()
-                li.child(0) // span
-                    .child(0) // a
-                    .also { a ->
-                        episode = a.text()
-                        url = a.absUrl("href")
-                    }
-                AnimeData(
-                    url = url,
-                    title = animeName,
-                    currentEpisode = episode
-                )
-            }
-            NamedValue(name, animeList)
-        }
         val seriesTitleEls = document.select(".firs.l .dtit h2")
         val seriesAnimeEls = document.select(".firs.l .img")
         val seriesCount = seriesAnimeEls.size.coerceAtMost(seriesTitleEls.size)
@@ -77,7 +57,7 @@ class WebPageRepository @Inject constructor(
             seriesList.add(NamedValue(title, seriesData))
         }
         return HomePageData(
-            timeLineList = timeLineList,
+            timeLineList = emptyList(),
             seriesList = seriesList
         )
     }
@@ -159,17 +139,14 @@ class WebPageRepository @Inject constructor(
 
     }
 
-    suspend fun searchAnimation(keyword: String, page: Int, pageSize: Int = 24): SearchPageData =
+    suspend fun searchAnimation(keyword: String, page: Int): SearchPageData =
         withContext(Dispatchers.IO) {
             val queryParts = mutableListOf("kw=${keyword.encodeUrl()}")
+            var searchUrl = "$SAKURA_URL/${keyword.encodeUrl()}/"
             if (page > 1) {
-                queryParts.add("pagesize=${pageSize}")
-                queryParts.add("pageindex=${page}")
-            } else {
-                queryParts.add("ex=1")
+                searchUrl += "?page=${page}"
             }
-            val document =
-                fetchDocument("$SAKURA_URL/s_all?${queryParts.joinToString("&")}")!!
+            val document = fetchDocument(searchUrl)!!
             val hasNextPage = document.select(".pages")[0].children().find {
                 it.text().contains("下一页")
             } != null
@@ -195,7 +172,7 @@ class WebPageRepository @Inject constructor(
         }
 
 
-    private suspend fun fetchDocument(url: String): Document? {
+    private fun fetchDocument(url: String): Document? {
         return okHttpClient.newCall(Request.Builder().url(url).get().build())
             .execute()
             .body
@@ -206,5 +183,19 @@ class WebPageRepository @Inject constructor(
                     setBaseUri(SAKURA_URL)
                 }
             }
+    }
+
+    suspend fun fetchVideoUrl(episodeUrl: String): Resource<String> {
+        return try {
+            fetchDocument(episodeUrl)
+                ?.select(".bofang > div")
+                ?.takeIf { it.size > 0 }
+                ?.first()
+                ?.attr("data-vid")
+                ?.let { it.removeSuffix("\$mp4") }
+                ?.let { Resource.Success(it) } ?: Resource.Error("加载视频链接失败")
+        } catch (e: Exception) {
+            Resource.Error(e.message ?: "")
+        }
     }
 }

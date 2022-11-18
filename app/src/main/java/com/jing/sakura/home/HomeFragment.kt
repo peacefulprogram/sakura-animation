@@ -62,6 +62,12 @@ class HomeFragment : BrowseSupportFragment() {
     }
 
 
+    override fun onResume() {
+        super.onResume()
+        viewModel.loadData()
+    }
+
+
     private fun setupItemClickListener() {
         onItemViewClickedListener = OnItemViewClickedListener { _, item, _, _ ->
             with(item as AnimeData) {
@@ -118,7 +124,7 @@ class HomeFragment : BrowseSupportFragment() {
     private fun observeHomePageData() {
         observeLiveData(viewModel.homePageData) { data ->
             when (data) {
-                is Resource.Loading -> prepareEntranceTransition()
+//                is Resource.Loading -> prepareEntranceTransition()
                 is Resource.Success -> {
                     renderData(data.data)
                     startEntranceTransition()

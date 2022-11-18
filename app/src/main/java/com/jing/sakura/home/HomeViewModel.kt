@@ -25,7 +25,7 @@ class HomeViewModel @Inject constructor(
 
 
     init {
-        loadData()
+//        loadData()
     }
 
 
