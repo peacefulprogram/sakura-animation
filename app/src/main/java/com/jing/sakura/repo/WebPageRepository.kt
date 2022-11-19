@@ -141,15 +141,24 @@ class WebPageRepository @Inject constructor(
 
     suspend fun searchAnimation(keyword: String, page: Int): SearchPageData =
         withContext(Dispatchers.IO) {
-            val queryParts = mutableListOf("kw=${keyword.encodeUrl()}")
-            var searchUrl = "$SAKURA_URL/${keyword.encodeUrl()}/"
+            var searchUrl = "$SAKURA_URL/search/${keyword.encodeUrl()}/"
             if (page > 1) {
                 searchUrl += "?page=${page}"
             }
             val document = fetchDocument(searchUrl)!!
-            val hasNextPage = document.select(".pages")[0].children().find {
-                it.text().contains("下一页")
-            } != null
+            var total = "0条"
+            val noNextPage = document.select(".pages")
+                .takeIf { it.isNotEmpty() }
+                ?.let { it[0].children() }
+                ?.let { pages ->
+                    pages.select("#totalnum")
+                        .takeIf { it.isNotEmpty() }
+                        ?.let { total = it[0].text() }
+                    pages.indexOfFirst { it.tagName() == "span" } in arrayOf(
+                        -1,
+                        pages.size - 2
+                    )
+                } ?: true
 
             val animeList = document.select(".lpic >ul > li").map { li ->
                 val url = li.child(0).absUrl("href")
@@ -168,7 +177,12 @@ class WebPageRepository @Inject constructor(
                 )
             }
 
-            SearchPageData(page = page, hasNextPage = hasNextPage, animeList = animeList)
+            SearchPageData(
+                page = page,
+                hasNextPage = !noNextPage,
+                animeList = animeList,
+                totalString = total
+            )
         }
 
 

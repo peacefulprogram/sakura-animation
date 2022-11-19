@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.jing.sakura.databinding.SearchResultFragmentBinding
 import com.jing.sakura.extend.dpToPixels
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
@@ -48,7 +49,7 @@ class SearchResultFragment : Fragment() {
             AnimePagingDataAdapter({
                 layoutManager.scrollToPositionWithOffset(
                     it,
-                    20.dpToPixels(requireContext()).toInt()
+                    0.dpToPixels(requireContext()).toInt()
                 )
             }) {
                 findNavController().navigate(
@@ -82,15 +83,22 @@ class SearchResultFragment : Fragment() {
         }
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.getPagingData(keyword).collect {
-                    dataAdapter.submitData(it)
-                }
+                viewModel.getPagingData(keyword, this@SearchResultFragment::changeTotalCount)
+                    .collect {
+                        dataAdapter.submitData(it)
+                    }
                 dataAdapter.loadStateFlow.collect {
 
                 }
             }
         }
         return viewBinding.root
+    }
+
+    fun changeTotalCount(total: String) {
+        lifecycleScope.launch(Dispatchers.Main) {
+            viewBinding.totalCount.text = "共查到:$total"
+        }
     }
 
     inner class SpaceDecorator(private val verticalSpacing: Int) : RecyclerView.ItemDecoration() {

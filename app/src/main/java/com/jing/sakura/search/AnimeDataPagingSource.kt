@@ -7,7 +7,8 @@ import com.jing.sakura.repo.WebPageRepository
 
 class AnimeDataPagingSource(
     private val keyword: String,
-    private val webPageRepository: WebPageRepository
+    private val webPageRepository: WebPageRepository,
+    private val onTotalCount: (String) -> Unit = {}
 ) : PagingSource<Int, AnimeData>() {
     override fun getRefreshKey(state: PagingState<Int, AnimeData>): Int? {
         return null
@@ -19,6 +20,7 @@ class AnimeDataPagingSource(
         return try {
             val data = webPageRepository.searchAnimation(keyword, page)
             val nextKey = if (data.hasNextPage) page + 1 else null
+            onTotalCount(data.totalString)
             LoadResult.Page(data.animeList, prevKey, nextKey)
         } catch (ex: Exception) {
             LoadResult.Error(ex)

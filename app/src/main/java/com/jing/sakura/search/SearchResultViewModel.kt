@@ -17,19 +17,19 @@ class SearchResultViewModel @Inject constructor(
     private val webPageRepository: WebPageRepository
 ) : ViewModel() {
 
-    private fun getPagingDataFlow(keyword: String): Flow<PagingData<AnimeData>> {
+    fun getPagingData(
+        keyword: String,
+        onTotal: (String) -> Unit = {}
+    ): Flow<PagingData<AnimeData>> {
         return Pager(
-            PagingConfig(24),
+            PagingConfig(20),
             pagingSourceFactory = {
                 AnimeDataPagingSource(
                     keyword,
-                    webPageRepository
+                    webPageRepository,
+                    onTotalCount = onTotal
                 )
             }
-        ).flow
-    }
-
-    fun getPagingData(keyword: String): Flow<PagingData<AnimeData>> {
-        return getPagingDataFlow(keyword).cachedIn(viewModelScope)
+        ).flow.cachedIn(viewModelScope)
     }
 }

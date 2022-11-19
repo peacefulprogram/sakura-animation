@@ -24,11 +24,11 @@ class AnimePagingDataAdapter(
 
         private val diffComparator = object : DiffUtil.ItemCallback<AnimeData>() {
             override fun areItemsTheSame(oldItem: AnimeData, newItem: AnimeData): Boolean {
-                return oldItem == newItem
+                return oldItem.url == newItem.url
             }
 
             override fun areContentsTheSame(oldItem: AnimeData, newItem: AnimeData): Boolean {
-                return oldItem == newItem
+                return oldItem.url == newItem.url
             }
 
         }
