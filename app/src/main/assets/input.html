@@ -45,6 +45,11 @@
             }
         }
         inputEl.addEventListener('input', inputHandler)
+        inputEl.addEventListener('keydown',function (keyEvent) {
+            if (keyEvent.code === 'Enter' && inputEl.value.trim()) {
+                submitHandler()
+            }
+        })
         btn.addEventListener('click', submitHandler)
         ws.onclose = function (event) {
             inputEl.removeEventListener('input', inputHandler)
