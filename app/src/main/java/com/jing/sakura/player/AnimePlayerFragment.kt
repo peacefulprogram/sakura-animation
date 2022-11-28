@@ -5,6 +5,8 @@ import android.os.Bundle
 import android.support.v4.media.session.MediaSessionCompat
 import androidx.leanback.app.VideoSupportFragment
 import androidx.leanback.app.VideoSupportFragmentGlueHost
+import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.ext.leanback.LeanbackPlayerAdapter
@@ -84,13 +86,15 @@ class AnimePlayerFragment : VideoSupportFragment() {
 
     private fun prepareGlue(localExoplayer: ExoPlayer) {
         ProgressTransportControlGlue(
-            requireContext(),
-            LeanbackPlayerAdapter(
+            context = requireContext(),
+            lifeCycleScope = lifecycleScope,
+            navController = findNavController(),
+            impl = LeanbackPlayerAdapter(
                 requireContext(),
                 localExoplayer,
                 PLAYER_UPDATE_INTERVAL_MILLIS.toInt()
             ),
-            onProgressUpdate
+            updateProgress = onProgressUpdate
         ).apply {
             host = VideoSupportFragmentGlueHost(this@AnimePlayerFragment)
             title = animeTitle

@@ -146,7 +146,7 @@ class WebPageRepository @Inject constructor(
                 searchUrl += "?page=${page}"
             }
             val document = fetchDocument(searchUrl)!!
-            var total = "0条"
+            var total: String? = null
             val noNextPage = document.select(".pages")
                 .takeIf { it.isNotEmpty() }
                 ?.let { it[0].children() }
@@ -181,7 +181,7 @@ class WebPageRepository @Inject constructor(
                 page = page,
                 hasNextPage = !noNextPage,
                 animeList = animeList,
-                totalString = total
+                totalString = total ?: "${animeList.size}条"
             )
         }
 

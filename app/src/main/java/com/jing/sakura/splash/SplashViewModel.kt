@@ -16,7 +16,7 @@ class SplashViewModel : ViewModel() {
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
-            delay(1500)
+            delay(500)
             _shouldGoHome.postValue(true)
         }
     }
