@@ -30,6 +30,16 @@ class HomeFragment : BrowseSupportFragment() {
         }
     }
 
+    private val rowAdapterCache = mutableMapOf<String, ArrayObjectAdapter>()
+
+    private val fragmentAdapter = ArrayObjectAdapter(object : ListRowPresenter() {
+        override fun createRowViewHolder(parent: ViewGroup?): RowPresenter.ViewHolder {
+            return super.createRowViewHolder(parent).apply {
+                (view as ListRowView).gridView.setItemSpacing(20)
+            }
+        }
+    })
+
     private val viewModel by viewModels<HomeViewModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,9 +65,10 @@ class HomeFragment : BrowseSupportFragment() {
         }
         observeHomePageData()
         setupItemClickListener()
-        setOnSearchClickedListener(View.OnClickListener {
+        setOnSearchClickedListener {
             findNavController().navigate(HomeFragmentDirections.actionHomeFragmentToSearchFragment())
-        })
+        }
+        this.adapter = fragmentAdapter
 //        setDynamicBackground()
     }
 
@@ -99,26 +110,42 @@ class HomeFragment : BrowseSupportFragment() {
     }
 
     private fun renderData(homePageData: HomePageData) {
-        val adapter = ArrayObjectAdapter(object : ListRowPresenter() {
-            override fun createRowViewHolder(parent: ViewGroup?): RowPresenter.ViewHolder {
-                return super.createRowViewHolder(parent).apply {
-                    (view as ListRowView).gridView.setItemSpacing(20)
-                }
-            }
-        })
         val cardWidth = resources.getDimension(R.dimen.poster_width).toInt()
         val cardHeight = resources.getDimension(R.dimen.poster_height).toInt()
 
-        for (series in homePageData.seriesList) {
+        val rows = homePageData.seriesList.map { series ->
             val headerItem = HeaderItem(series.name)
-
-            val rowAdapter = ArrayObjectAdapter(AnimeCardPresenter(cardWidth, cardHeight))
-            for (anime in series.value) {
-                rowAdapter.add(anime)
-            }
-            adapter.add(ListRow(headerItem, rowAdapter))
+            val rowAdapter =
+                rowAdapterCache.computeIfAbsent(series.name) {
+                    ArrayObjectAdapter(
+                        AnimeCardPresenter(
+                            cardWidth,
+                            cardHeight
+                        )
+                    )
+                }.apply {
+                    setItems(series.value, diffCallback)
+                }
+            ListRow(headerItem, rowAdapter)
         }
-        this.adapter = adapter
+
+        fragmentAdapter.setItems(rows, object : DiffCallback<ListRow>() {
+            override fun areItemsTheSame(oldItem: ListRow, newItem: ListRow): Boolean =
+                oldItem.adapter == newItem.adapter && oldItem.headerItem.name == newItem.headerItem.name
+
+            override fun areContentsTheSame(oldItem: ListRow, newItem: ListRow): Boolean =
+                areItemsTheSame(oldItem, newItem)
+
+        })
+    }
+
+    private val diffCallback = object : DiffCallback<AnimeData>() {
+        override fun areContentsTheSame(oldItem: AnimeData, newItem: AnimeData): Boolean {
+            return oldItem.url == newItem.url && oldItem.currentEpisode == newItem.currentEpisode
+        }
+
+        override fun areItemsTheSame(oldItem: AnimeData, newItem: AnimeData): Boolean =
+            oldItem.url == newItem.url
     }
 
     private fun observeHomePageData() {
