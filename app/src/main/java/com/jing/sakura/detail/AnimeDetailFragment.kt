@@ -4,7 +4,9 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import androidx.fragment.app.viewModels
+import androidx.leanback.app.ProgressBarManager
 import androidx.leanback.app.RowsSupportFragment
 import androidx.leanback.widget.*
 import androidx.navigation.fragment.findNavController
@@ -27,9 +29,10 @@ class AnimeDetailFragment : RowsSupportFragment() {
     private lateinit var detailPageUrl: String
     private var animeName: String? = null
 
+    private val progressBarManager = ProgressBarManager()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         detailPageUrl = AnimeDetailFragmentArgs.fromBundle(requireArguments()).detailUrl
         viewModel.loadData(detailPageUrl)
         onItemViewClickedListener = OnItemViewClickedListener { _, item, _, _ ->
@@ -54,14 +57,32 @@ class AnimeDetailFragment : RowsSupportFragment() {
         }
     }
 
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        val frameLayout = FrameLayout(requireContext())
+        val view = super.onCreateView(inflater, container, savedInstanceState)
+        frameLayout.addView(view)
+        progressBarManager.setRootView(frameLayout)
+        progressBarManager.initialDelay = 0
+        progressBarManager.enableProgressBar()
+        return frameLayout;
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        progressBarManager.show()
         observeLiveData(viewModel.detailPageData) {
             when (it) {
                 is Resource.Success -> {
+                    progressBarManager.hide()
                     animeName = it.data.animeName
                     renderData(it.data)
                 }
+                is Resource.Loading -> progressBarManager.show()
+                is Resource.Error -> progressBarManager.hide()
                 else -> {}
             }
         }
