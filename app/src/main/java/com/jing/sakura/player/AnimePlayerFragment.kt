@@ -97,6 +97,7 @@ class AnimePlayerFragment : VideoSupportFragment() {
             updateProgress = onProgressUpdate
         ).apply {
             host = VideoSupportFragmentGlueHost(this@AnimePlayerFragment)
+            isControlsOverlayAutoHideEnabled = true
             title = animeTitle
             // Enable seek manually since PlaybackTransportControlGlue.getSeekProvider() is null,
             // so that PlayerAdapter.seekTo(long) will be called during user seeking.

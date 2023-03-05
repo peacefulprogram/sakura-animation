@@ -112,50 +112,45 @@ class ProgressTransportControlGlue<T : PlayerAdapter>(
         playerAdapter.seekTo(newPosition)
     }
 
-    override fun onKey(v: View?, keyCode: Int, event: KeyEvent?): Boolean {
-        // 进度条隐藏时,直接按ok键开始播放或者暂停
-        if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER && !host.isControlsOverlayVisible) {
+    override fun onKey(v: View?, keyCode: Int, keyEvent: KeyEvent): Boolean {
+
+        if (keyEvent.keyCode == KeyEvent.KEYCODE_BACK) {
+            if (keyEvent.action == KeyEvent.ACTION_DOWN) {
+                return true
+            }
+            if (host.isControlsOverlayVisible) {
+                host.hideControlsOverlay(false)
+                return true
+            }
+            if (!playerAdapter.isPlaying) {
+                backPressed = false
+                navController.popBackStack()
+                return true
+            }
+            if (backPressed) {
+                navController.popBackStack()
+                return true
+            }
+            backPressed = true
+            Toast.makeText(context, "再按一次退出播放", Toast.LENGTH_SHORT).show()
+            lifeCycleScope.launch {
+                delay(2000)
+                backPressed = false
+            }
+            return true
+        }
+        if (keyEvent.keyCode == KeyEvent.KEYCODE_DPAD_CENTER && !host.isControlsOverlayVisible) {
+            if (keyEvent.action == KeyEvent.ACTION_DOWN) {
+                return true
+            }
             if (playerAdapter.isPlaying) {
                 playerAdapter.pause()
-                host.showControlsOverlay(true)
             } else {
                 playerAdapter.play()
             }
             return true
         }
-        if (keyCode == KeyEvent.KEYCODE_BACK) {
-            // 播放完成时,点返回键直接退出
-            if (!playerAdapter.isPlaying && playerAdapter.duration - playerAdapter.currentPosition < 1000) {
-                navController.popBackStack()
-            } else if (playerAdapter.isPlaying) {
-                if (backPressed) {
-                    navController.popBackStack()
-                    return true
-                }
-                if (host.isControlsOverlayVisible) {
-                    host.hideControlsOverlay(true)
-                }
-                Toast.makeText(context, "再按一次退出播放", Toast.LENGTH_SHORT).show()
-                backPressed = true
-                lifeCycleScope.launch {
-                    delay(2000L)
-                    backPressed = false
-                }
-            }
-            return true
-        }
-
-        // info键控制进度条显示或者隐藏
-        if (keyCode == KeyEvent.KEYCODE_INFO) {
-            if (host.isControlsOverlayVisible) {
-                host.hideControlsOverlay(true)
-            } else {
-                host.showControlsOverlay(true)
-            }
-            return true
-        }
-
-        return super.onKey(v, keyCode, event)
+        return super.onKey(v, keyCode, keyEvent)
     }
 
     companion object {
