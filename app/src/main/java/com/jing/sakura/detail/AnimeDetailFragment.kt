@@ -18,6 +18,7 @@ import com.jing.sakura.data.AnimePlayListEpisode
 import com.jing.sakura.data.Resource
 import com.jing.sakura.databinding.DetailInfomationLayoutBinding
 import com.jing.sakura.extend.observeLiveData
+import com.jing.sakura.player.NavigateToPlayerArg
 import com.jing.sakura.presenter.AnimeCardPresenter
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -35,14 +36,18 @@ class AnimeDetailFragment : RowsSupportFragment() {
         super.onCreate(savedInstanceState)
         detailPageUrl = AnimeDetailFragmentArgs.fromBundle(requireArguments()).detailUrl
         viewModel.loadData(detailPageUrl)
-        onItemViewClickedListener = OnItemViewClickedListener { _, item, _, _ ->
+        onItemViewClickedListener = OnItemViewClickedListener { vh, item, _, _ ->
             when (item) {
                 is AnimePlayListEpisode -> {
-
+                    val viewHolder = vh as EpisodeViewHolder
+                    val arg = NavigateToPlayerArg(
+                        animeName ?: "",
+                        vh.episodeIndex,
+                        vh.playlist
+                    )
                     findNavController().navigate(
-                        AnimeDetailFragmentDirections.actionAnimeDetailFragmentToLoadVideoUrlFragment(
-                            item.url,
-                            "$animeName - ${item.episode}"
+                        AnimeDetailFragmentDirections.actionAnimeDetailFragmentToAnimePlayerFragment(
+                            arg
                         )
                     )
                 }
@@ -93,7 +98,7 @@ class AnimeDetailFragment : RowsSupportFragment() {
 
         rowsAdapter.add(detailPageData)
         detailPageData.playLists.forEachIndexed { index, playlist ->
-            val episodeAdapter = ArrayObjectAdapter(DetailEpisodePresenter())
+            val episodeAdapter = ArrayObjectAdapter(DetailEpisodePresenter(playlist))
             playlist.episodeList.forEach(episodeAdapter::add)
             val listRow = ListRow(HeaderItem("播放列表${index + 1}"), episodeAdapter)
             rowsAdapter.add(listRow)

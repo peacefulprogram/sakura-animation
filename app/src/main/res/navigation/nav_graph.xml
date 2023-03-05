@@ -31,35 +31,19 @@
             android:name="detailUrl"
             app:argType="string" />
         <action
-            android:id="@+id/action_animeDetailFragment_to_loadVideoUrlFragment"
-            app:destination="@id/loadVideoUrlFragment" />
-        <action
             android:id="@+id/action_animeDetailFragment_self"
             app:destination="@id/animeDetailFragment" />
-    </fragment>
-    <fragment
-        android:id="@+id/loadVideoUrlFragment"
-        android:name="com.jing.sakura.player.LoadVideoUrlFragment"
-        android:label="LoadVideoUrlFragment" >
-        <argument
-            android:name="episodeUrl"
-            app:argType="string" />
-        <argument
-            android:name="animeTitle"
-            app:argType="string" />
         <action
-            android:id="@+id/action_loadVideoUrlFragment_to_animePlayerFragment"
+            android:id="@+id/action_animeDetailFragment_to_animePlayerFragment"
             app:destination="@id/animePlayerFragment" />
     </fragment>
     <fragment
         android:id="@+id/animePlayerFragment"
         android:name="com.jing.sakura.player.AnimePlayerFragment"
         android:label="AnimePlayerFragment" >
-        <argument android:name="videoUrl"
-            app:argType="string" />
         <argument
-            android:name="title"
-            app:argType="string" />
+            android:name="animeDetail"
+            app:argType="com.jing.sakura.player.NavigateToPlayerArg" />
     </fragment>
     <fragment
         android:id="@+id/searchFragment"

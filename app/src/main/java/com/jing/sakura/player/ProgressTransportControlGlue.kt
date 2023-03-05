@@ -61,7 +61,8 @@ class ProgressTransportControlGlue<T : PlayerAdapter>(
     private val lifeCycleScope: CoroutineScope,
     private val navController: NavController,
     impl: T,
-    private val updateProgress: () -> Unit
+    private val updateProgress: () -> Unit,
+    private val chooseEpisode: () -> Unit = {}
 ) : PlaybackTransportControlGlue<T>(context, impl) {
 
     private var backPressed = false
@@ -137,6 +138,10 @@ class ProgressTransportControlGlue<T : PlayerAdapter>(
                 delay(2000)
                 backPressed = false
             }
+            return true
+        }
+        if (keyEvent.keyCode == KeyEvent.KEYCODE_MENU && keyEvent.action == KeyEvent.ACTION_UP) {
+            chooseEpisode()
             return true
         }
         if (keyEvent.keyCode == KeyEvent.KEYCODE_DPAD_CENTER && !host.isControlsOverlayVisible) {

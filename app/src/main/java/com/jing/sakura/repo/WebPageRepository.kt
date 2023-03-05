@@ -101,11 +101,12 @@ class WebPageRepository @Inject constructor(
                 li.text()
             }
             val episodeGroup = select(".main0 ul").map { ul ->
-                ul.children().map { li ->
+                ul.children().mapIndexed { episodeIndex, li ->
                     li.child(0).run {
                         AnimePlayListEpisode(
                             episode = text(),
-                            url = absUrl("href")
+                            url = absUrl("href"),
+                            episodeIndex = episodeIndex
                         )
                     }
                 }
@@ -199,7 +200,7 @@ class WebPageRepository @Inject constructor(
             }
     }
 
-    suspend fun fetchVideoUrl(episodeUrl: String): Resource<String> {
+    fun fetchVideoUrl(episodeUrl: String): Resource<String> {
         return try {
             fetchDocument(episodeUrl)
                 ?.select(".bofang > div")
