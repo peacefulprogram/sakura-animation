@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/home_history_icon"
+    android:layout_width="52dp"
+    android:layout_height="52dp"
+    android:background="@drawable/history_icon_bg"
+    android:focusable="true">
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:src="@drawable/history_icon" />
+
+</FrameLayout>

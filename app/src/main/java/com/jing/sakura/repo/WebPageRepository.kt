@@ -64,6 +64,7 @@ class WebPageRepository @Inject constructor(
 
     suspend fun fetchDetailPage(url: String): AnimeDetailPageData {
         val document = fetchDocument(url)!!
+        val animeId = url.substring(url.lastIndexOf('/') + 1, url.lastIndexOf('.'))
         val animeName = document.select("div.rate.r > h1").text()
         val releaseDay: String
         val region: NamedValue<String>
@@ -125,6 +126,7 @@ class WebPageRepository @Inject constructor(
         }
 
         return AnimeDetailPageData(
+            animeId = animeId,
             animeName = animeName,
             releaseDay = releaseDay,
             region = region,
@@ -206,8 +208,7 @@ class WebPageRepository @Inject constructor(
                 ?.select(".bofang > div")
                 ?.takeIf { it.size > 0 }
                 ?.first()
-                ?.attr("data-vid")
-                ?.let { it.removeSuffix("\$mp4") }
+                ?.attr("data-vid")?.removeSuffix("\$mp4")
                 ?.let { Resource.Success(it) } ?: Resource.Error("加载视频链接失败")
         } catch (e: Exception) {
             Resource.Error(e.message ?: "")

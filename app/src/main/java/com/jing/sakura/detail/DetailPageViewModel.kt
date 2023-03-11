@@ -8,22 +8,22 @@ import androidx.lifecycle.viewModelScope
 import com.jing.sakura.data.AnimeDetailPageData
 import com.jing.sakura.data.Resource
 import com.jing.sakura.repo.WebPageRepository
+import com.jing.sakura.room.VideoHistoryDao
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class DetailPageViewModel @Inject constructor(
-    private val repository: WebPageRepository
+    private val repository: WebPageRepository,
+    private val videoHistoryDao: VideoHistoryDao
 ) : ViewModel() {
 
     private var _detailPageData = MutableLiveData<Resource<AnimeDetailPageData>>(Resource.Empty())
 
     val detailPageData: LiveData<Resource<AnimeDetailPageData>>
         get() = _detailPageData
-
 
     fun loadData(url: String) {
         if (detailPageData.value is Resource.Loading) {
@@ -33,6 +33,7 @@ class DetailPageViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 repository.fetchDetailPage(url).also {
+                    it.videoHistory = videoHistoryDao.queryLastHistoryOfAnimeId(it.animeId)
                     _detailPageData.postValue(Resource.Success(it))
                 }
             } catch (ex: Exception) {

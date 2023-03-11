@@ -5,4 +5,8 @@ data class AnimePlayListEpisode(
     val episode: String,
     val url: String,
     val episodeIndex: Int
-) : java.io.Serializable
+) : java.io.Serializable {
+    val episodeId by lazy {
+        url.substring(url.lastIndexOf('/') + 1, url.lastIndexOf('.'))
+    }
+}

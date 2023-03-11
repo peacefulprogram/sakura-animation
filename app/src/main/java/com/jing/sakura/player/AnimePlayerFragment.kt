@@ -16,6 +16,8 @@ import com.google.android.exoplayer2.Player.Listener
 import com.google.android.exoplayer2.ext.leanback.LeanbackPlayerAdapter
 import com.jing.sakura.data.Resource
 import com.jing.sakura.extend.dpToPixels
+import com.jing.sakura.extend.secondsToMinuteAndSecondText
+import com.jing.sakura.extend.showShortToast
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -34,9 +36,7 @@ class AnimePlayerFragment : VideoSupportFragment() {
         super.onCreate(savedInstanceState)
         AnimePlayerFragmentArgs.fromBundle(requireArguments()).let {
             viewModel.init(
-                it.animeDetail.animeName,
-                it.animeDetail.playIndex,
-                it.animeDetail.playlist
+                it.animeDetail
             )
         }
         requireActivity().window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -55,11 +55,21 @@ class AnimePlayerFragment : VideoSupportFragment() {
         lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
 
-                viewModel.videoUrl.collectLatest {
-                    when (it) {
+                viewModel.videoUrl.collectLatest { urlAndTime ->
+                    when (urlAndTime) {
                         is Resource.Success -> {
-                            MediaItem.fromUri(it.data).let {
+                            MediaItem.fromUri(urlAndTime.data.videoUrl).let {
                                 exoplayer?.setMediaItem(it)
+                                if (urlAndTime.data.lastPlayPosition > 0) {
+                                    // 距离结束小于10秒,当作播放结束
+                                    if (urlAndTime.data.videoDuration > 0 && urlAndTime.data.videoDuration - urlAndTime.data.lastPlayPosition < 10_000) {
+                                        requireContext().showShortToast("上次已播放完,将从头开始播放")
+                                    } else {
+                                        val seekTo = urlAndTime.data.lastPlayPosition
+                                        exoplayer?.seekTo(seekTo)
+                                        requireContext().showShortToast("已定位到上次播放位置:${(seekTo / 1000).secondsToMinuteAndSecondText()}")
+                                    }
+                                }
                                 exoplayer?.prepare()
                                 exoplayer?.play()
                             }
@@ -92,6 +102,14 @@ class AnimePlayerFragment : VideoSupportFragment() {
                         viewModel.playNextEpisodeIfExists()
                     }
                 }
+
+                override fun onIsPlayingChanged(isPlaying: Boolean) {
+                    if (isPlaying) {
+                        viewModel.startSaveHistory()
+                    } else {
+                        viewModel.stopSaveHistory()
+                    }
+                }
             })
         }
 
@@ -114,7 +132,12 @@ class AnimePlayerFragment : VideoSupportFragment() {
                 localExoplayer,
                 PLAYER_UPDATE_INTERVAL_MILLIS.toInt()
             ),
-            updateProgress = onProgressUpdate,
+            updateProgress = {
+                viewModel.onPlayPositionChange(
+                    localExoplayer.currentPosition,
+                    localExoplayer.contentDuration
+                )
+            },
             chooseEpisode = this::openPlayListDialogAndChoose
         ).apply {
             glue = this
@@ -125,12 +148,6 @@ class AnimePlayerFragment : VideoSupportFragment() {
             // so that PlayerAdapter.seekTo(long) will be called during user seeking.
             isSeekEnabled = true
         }
-    }
-
-
-    private val onProgressUpdate: () -> Unit = {
-        // TODO(benbaxter): Calculate when end credits are displaying and show the next episode for
-        //  episodic content.
     }
 
 

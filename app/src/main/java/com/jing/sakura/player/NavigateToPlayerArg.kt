@@ -5,6 +5,8 @@ import java.io.Serializable
 
 data class NavigateToPlayerArg(
     val animeName: String,
+    val animeId: String,
+    val coverUrl: String,
     val playIndex: Int,
     val playlist: List<AnimePlayListEpisode>
 ) : Serializable

@@ -6,27 +6,36 @@ import androidx.lifecycle.viewModelScope
 import com.jing.sakura.data.AnimePlayListEpisode
 import com.jing.sakura.data.Resource
 import com.jing.sakura.repo.WebPageRepository
+import com.jing.sakura.room.VideoHistoryDao
+import com.jing.sakura.room.VideoHistoryEntity
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.regex.Pattern
 import javax.inject.Inject
 
 
 @HiltViewModel
 class VideoPlayerViewModel @Inject constructor(
-    private val repository: WebPageRepository
+    private val repository: WebPageRepository,
+    private val videoHistoryDao: VideoHistoryDao
 ) : ViewModel() {
 
     private val TAG = VideoPlayerViewModel::class.java.simpleName
 
     private var _animeName = ""
 
+    private lateinit var anime: NavigateToPlayerArg
+
     private var _playList = emptyList<AnimePlayListEpisode>()
+
+    private var _saveHistoryJob: Job? = null
+
+    private var currentPlayPosition: Long = 0L
+
+    private var videoDuration: Long = 0L
 
     val playList: List<AnimePlayListEpisode>
         get() = _playList
@@ -40,8 +49,8 @@ class VideoPlayerViewModel @Inject constructor(
     val playerTitle: MutableStateFlow<String>
         get() = _playerTitle
 
-    private val _videoUrl = MutableStateFlow<Resource<String>>(Resource.Loading())
-    val videoUrl: StateFlow<Resource<String>>
+    private val _videoUrl = MutableStateFlow<Resource<EpisodeUrlAndHistory>>(Resource.Loading())
+    val videoUrl: StateFlow<Resource<EpisodeUrlAndHistory>>
         get() = _videoUrl
 
 
@@ -57,11 +66,12 @@ class VideoPlayerViewModel @Inject constructor(
         }
     }
 
-    fun init(animeName: String, playIndex: Int, playlist: List<AnimePlayListEpisode>) {
+    fun init(anime: NavigateToPlayerArg) {
+        this.anime = anime
         viewModelScope.launch {
-            _animeName = animeName
-            this@VideoPlayerViewModel._playList = playlist
-            _playIndex.emit(playIndex)
+            _animeName = anime.animeName
+            this@VideoPlayerViewModel._playList = anime.playlist
+            _playIndex.emit(anime.playIndex)
         }
     }
 
@@ -70,7 +80,22 @@ class VideoPlayerViewModel @Inject constructor(
         withContext(Dispatchers.IO) {
             try {
                 val resp = repository.fetchVideoUrl(episode.url)
-                _videoUrl.emit(resp)
+                val history = videoHistoryDao.queryHistoryByEpisodeId(
+                    episodeId = episode.episodeId
+                )
+                when (resp) {
+                    is Resource.Error -> _videoUrl.emit(Resource.Error(resp.message))
+                    is Resource.Success -> _videoUrl.emit(
+                        Resource.Success(
+                            EpisodeUrlAndHistory(
+                                videoUrl = resp.data,
+                                videoDuration = history?.videoDuration ?: 0L,
+                                lastPlayPosition = history?.lastPlayTime ?: 0L
+                            )
+                        )
+                    )
+                    else -> {}
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "fetchVideoUrl: ${e.message}", e)
                 _videoUrl.emit(Resource.Error(e.message ?: ""))
@@ -82,6 +107,33 @@ class VideoPlayerViewModel @Inject constructor(
         viewModelScope.launch {
             _playIndex.emit(index)
         }
+    }
+
+    fun startSaveHistory() {
+        stopSaveHistory()
+        _saveHistoryJob = viewModelScope.launch(Dispatchers.IO) {
+            while (true) {
+                val history = withContext(Dispatchers.Main) {
+                    VideoHistoryEntity(
+                        animeId = anime.animeId,
+                        animeName = anime.animeName,
+                        episodeId = playList[playIndex].episodeId,
+                        lastEpisodeName = playList[playIndex].episode,
+                        updateTime = System.currentTimeMillis(),
+                        lastPlayTime = currentPlayPosition,
+                        coverUrl = anime.coverUrl,
+                        videoDuration = videoDuration
+                    )
+                }
+                videoHistoryDao.saveHistory(history)
+                delay(5000L)
+            }
+        }
+    }
+
+    fun stopSaveHistory() {
+        _saveHistoryJob?.cancel()
+        _saveHistoryJob = null
     }
 
     fun playNextEpisodeIfExists() {
@@ -122,5 +174,10 @@ class VideoPlayerViewModel @Inject constructor(
             ?.run {
                 group().toInt()
             }
+    }
+
+    fun onPlayPositionChange(currentPosition: Long, duration: Long) {
+        this.currentPlayPosition = currentPosition
+        this.videoDuration = duration
     }
 }

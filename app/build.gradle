@@ -36,9 +36,19 @@ android {
 
 dependencies {
 
+    def room_version = '2.4.3'
     implementation 'androidx.core:core-ktx:1.7.0'
     implementation 'androidx.leanback:leanback:1.0.0'
     implementation 'androidx.leanback:leanback-tab:1.1.0-beta01'
+    implementation('androidx.leanback:leanback-paging:1.1.0-alpha09') {
+        exclude group: 'androidx.leanback', module: 'leanback'
+    }
+
+    // room
+    implementation "androidx.room:room-runtime:$room_version"
+    annotationProcessor "androidx.room:room-compiler:$room_version"
+    kapt "androidx.room:room-compiler:$room_version"
+    implementation "androidx.room:room-paging:$room_version"
 
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4'
 

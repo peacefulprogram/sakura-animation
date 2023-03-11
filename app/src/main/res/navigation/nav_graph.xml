@@ -15,13 +15,16 @@
     <fragment
         android:id="@+id/homeFragment"
         android:name="com.jing.sakura.home.HomeFragment"
-        android:label="HomeFragment" >
+        android:label="HomeFragment">
         <action
             android:id="@+id/action_homeFragment_to_animeDetailFragment"
             app:destination="@id/animeDetailFragment" />
         <action
             android:id="@+id/action_homeFragment_to_searchFragment"
             app:destination="@id/searchFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_historyFragment"
+            app:destination="@id/historyFragment" />
     </fragment>
     <fragment
         android:id="@+id/animeDetailFragment"
@@ -56,12 +59,20 @@
     <fragment
         android:id="@+id/searchResultFragment"
         android:name="com.jing.sakura.search.SearchResultFragment"
-        android:label="SearchResultFragment" >
+        android:label="SearchResultFragment">
         <action
             android:id="@+id/action_searchResultFragment_to_animeDetailFragment"
             app:destination="@id/animeDetailFragment" />
         <argument
             android:name="keyword"
             app:argType="string" />
+    </fragment>
+    <fragment
+        android:id="@+id/historyFragment"
+        android:name="com.jing.sakura.history.HistoryFragment"
+        android:label="HistoryFragment">
+        <action
+            android:id="@+id/action_historyFragment_to_animeDetailFragment"
+            app:destination="@id/animeDetailFragment" />
     </fragment>
 </navigation>
