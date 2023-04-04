@@ -208,7 +208,15 @@ class WebPageRepository @Inject constructor(
                 ?.select(".bofang > div")
                 ?.takeIf { it.size > 0 }
                 ?.first()
-                ?.attr("data-vid")?.removeSuffix("\$mp4")
+                ?.attr("data-vid")
+                ?.let {
+                    val dollarIndex = it.lastIndexOf('$')
+                    if (dollarIndex == -1) {
+                        it
+                    } else {
+                        it.substring(0 until dollarIndex)
+                    }
+                }
                 ?.let { Resource.Success(it) } ?: Resource.Error("加载视频链接失败")
         } catch (e: Exception) {
             Resource.Error(e.message ?: "")
