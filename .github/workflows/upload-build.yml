@@ -1,5 +1,7 @@
 name: upload-release-asset
-on: release
+on: 
+  release:
+    types: [released]
 jobs:
   build-and-upload:
     runs-on: ubuntu-latest
