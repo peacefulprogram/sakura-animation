@@ -15,13 +15,13 @@ jobs:
     - name: build
       run: |
         ls -a
-        echo 'ref ${{ github.ref }}'
+        echo 'ref ${{ github.ref_name }}'
         chmod a+x ./gradlew
         ./gradlew :app:assemble
-        mv app/build/outputs/apk/release/app-release-unsigned.apk sakura-animation-${github.ref}.apk
+        mv app/build/outputs/apk/release/app-release-unsigned.apk sakura-animation-${{ github.ref }}.apk
     - name: upload-asset
       run: |
-        gh release upload ${{ github.ref }} sakura-animation-${github.ref}.apk
+        gh release upload ${{ github.ref_name }} sakura-animation-${{ github.ref_name }}.apk
       env: 
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
