@@ -12,10 +12,14 @@ jobs:
         java-version: 16
     - name: build
       run: |
-        chmod a+x gradlew
-        gradlew :app:assemble
+        ls -a
+        echo 'ref ${{ github.ref }}'
+        chmod a+x ./gradlew
+        ./gradlew :app:assemble
         mv app/build/outputs/apk/release/app-release-unsigned.apk sakura-animation-${github.ref}.apk
     - name: upload-asset
       run: |
         gh release upload ${{ github.ref }} sakura-animation-${github.ref}.apk
+      env: 
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
