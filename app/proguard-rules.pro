@@ -19,3 +19,7 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+-keep class kotlin.reflect.jvm.internal.** { *; }
+-keep class kotlin.text.RegexOption { *; }
+-keep class com.jing.sakura.http.** {*;}

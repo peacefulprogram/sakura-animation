@@ -1,0 +1,25 @@
+name: release
+on:
+  push:
+    tags:
+      - '**'
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3.5.2
+      - name: Setup Java JDK
+        uses: actions/setup-java@v1.4.4
+        with:
+          java-version: 17
+      - name: Build
+        run: |
+          chmod a+x ./gradlew
+          ./gradlew :app:assemble
+          mv app/build/outputs/apk/release/app-release-unsigned.apk sakura-animation-${{ github.ref_name }}.apk
+      - name: Release
+        run: |
+          gh release create ${{ github.ref_name }} sakura-animation-${{ github.ref_name }}.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

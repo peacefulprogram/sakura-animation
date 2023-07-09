@@ -1,6 +1,7 @@
 package com.jing.sakura.presenter
 
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.leanback.widget.BaseCardView
 import androidx.leanback.widget.ImageCardView
 import androidx.leanback.widget.Presenter
@@ -23,7 +24,8 @@ class AnimeCardPresenter(
             isFocusableInTouchMode = true
             cardType = BaseCardView.CARD_TYPE_INFO_OVER
             setInfoAreaBackgroundColor(
-                infoBgColor ?: parent.context.getColor(R.color.gray900).getColorWithAlpha(0.5f)
+                infoBgColor ?: ContextCompat.getColor(parent.context, R.color.gray900)
+                    .getColorWithAlpha(0.5f)
             )
             mainImageView.layoutParams = BaseCardView.LayoutParams(cardWidth, cardHeight)
         }

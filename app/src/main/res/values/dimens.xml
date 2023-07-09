@@ -5,4 +5,7 @@
     <dimen name="history_poster_width">170dp</dimen>
     <dimen name="history_poster_height">230dp</dimen>
     <dimen name="lb_browse_padding_start">10dp</dimen>
+    <dimen name="screen_v_padding">10dp</dimen>
+    <dimen name="screen_h_padding">10dp</dimen>
+    <dimen name="home_icon_gap">10dp</dimen>
 </resources>

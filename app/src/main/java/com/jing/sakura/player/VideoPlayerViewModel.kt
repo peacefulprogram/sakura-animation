@@ -8,17 +8,19 @@ import com.jing.sakura.data.Resource
 import com.jing.sakura.repo.WebPageRepository
 import com.jing.sakura.room.VideoHistoryDao
 import com.jing.sakura.room.VideoHistoryEntity
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.regex.Pattern
-import javax.inject.Inject
 
 
-@HiltViewModel
-class VideoPlayerViewModel @Inject constructor(
+class VideoPlayerViewModel(
+    private val anime: NavigateToPlayerArg,
     private val repository: WebPageRepository,
     private val videoHistoryDao: VideoHistoryDao
 ) : ViewModel() {
@@ -26,8 +28,6 @@ class VideoPlayerViewModel @Inject constructor(
     private val TAG = VideoPlayerViewModel::class.java.simpleName
 
     private var _animeName = ""
-
-    private lateinit var anime: NavigateToPlayerArg
 
     private var _playList = emptyList<AnimePlayListEpisode>()
 
@@ -49,7 +49,7 @@ class VideoPlayerViewModel @Inject constructor(
     val playerTitle: MutableStateFlow<String>
         get() = _playerTitle
 
-    private val _videoUrl = MutableStateFlow<Resource<EpisodeUrlAndHistory>>(Resource.Loading())
+    private val _videoUrl = MutableStateFlow<Resource<EpisodeUrlAndHistory>>(Resource.Loading)
     val videoUrl: StateFlow<Resource<EpisodeUrlAndHistory>>
         get() = _videoUrl
 
@@ -64,10 +64,10 @@ class VideoPlayerViewModel @Inject constructor(
                 }
             }
         }
+        init()
     }
 
-    fun init(anime: NavigateToPlayerArg) {
-        this.anime = anime
+    fun init() {
         viewModelScope.launch {
             _animeName = anime.animeName
             this@VideoPlayerViewModel._playList = anime.playlist
@@ -76,7 +76,7 @@ class VideoPlayerViewModel @Inject constructor(
     }
 
     private suspend fun fetchVideoUrl(episode: AnimePlayListEpisode) {
-        _videoUrl.emit(Resource.Loading())
+        _videoUrl.emit(Resource.Loading)
         withContext(Dispatchers.IO) {
             try {
                 val resp = repository.fetchVideoUrl(episode.url)
@@ -94,6 +94,7 @@ class VideoPlayerViewModel @Inject constructor(
                             )
                         )
                     )
+
                     else -> {}
                 }
             } catch (e: Exception) {

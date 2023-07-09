@@ -5,13 +5,11 @@ import android.os.Bundle
 import android.view.View
 import android.view.WindowManager
 import androidx.core.graphics.drawable.toDrawable
-import androidx.fragment.app.viewModels
 import androidx.leanback.app.VideoSupportFragment
 import androidx.leanback.app.VideoSupportFragmentGlueHost
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.navigation.fragment.findNavController
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.Player.Listener
@@ -20,15 +18,14 @@ import com.jing.sakura.data.Resource
 import com.jing.sakura.extend.dpToPixels
 import com.jing.sakura.extend.secondsToMinuteAndSecondText
 import com.jing.sakura.extend.showShortToast
-import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import java.time.Duration
+import org.koin.android.ext.android.get
+import org.koin.core.parameter.parametersOf
 
-@AndroidEntryPoint
 class AnimePlayerFragment : VideoSupportFragment() {
 
-    private val viewModel by viewModels<VideoPlayerViewModel>()
+    private lateinit var viewModel: VideoPlayerViewModel
     private var exoplayer: ExoPlayer? = null
 
     private var glue: ProgressTransportControlGlue<LeanbackPlayerAdapter>? = null
@@ -36,11 +33,13 @@ class AnimePlayerFragment : VideoSupportFragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        AnimePlayerFragmentArgs.fromBundle(requireArguments()).let {
-            viewModel.init(
-                it.animeDetail
-            )
-        }
+        val intentArg = requireActivity().intent.getSerializableExtra(
+            "video",
+        ) as NavigateToPlayerArg
+        viewModel = get { parametersOf(intentArg) }
+        viewModel.init(
+
+        )
         requireActivity().window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         // Create the MediaSession that will be used throughout the lifecycle of this Fragment.
     }
@@ -77,6 +76,7 @@ class AnimePlayerFragment : VideoSupportFragment() {
                                 exoplayer?.play()
                             }
                         }
+
                         else -> {}
                     }
                 }
@@ -129,7 +129,7 @@ class AnimePlayerFragment : VideoSupportFragment() {
         ProgressTransportControlGlue(
             context = requireContext(),
             lifeCycleScope = lifecycleScope,
-            navController = findNavController(),
+            activity = requireActivity(),
             impl = LeanbackPlayerAdapter(
                 requireContext(),
                 localExoplayer,
@@ -158,7 +158,7 @@ class AnimePlayerFragment : VideoSupportFragment() {
         // Update the player UI fairly often. The frequency of updates affects several UI components
         // such as the smoothness of the progress bar and time stamp labels updating. This value can
         // be tweaked for better performance.
-        private val PLAYER_UPDATE_INTERVAL_MILLIS = Duration.ofMillis(100).toMillis()
+        private const val PLAYER_UPDATE_INTERVAL_MILLIS = 100L
 
         // A short name to identify the media session when debugging.
         private const val MEDIA_SESSION_TAG = "ReferenceAppKotlin"

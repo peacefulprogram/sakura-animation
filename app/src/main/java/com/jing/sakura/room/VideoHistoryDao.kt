@@ -36,4 +36,7 @@ interface VideoHistoryDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun saveHistory(history: VideoHistoryEntity)
+
+    @Query("delete from video_history where animeId = :animeId")
+    fun deleteHistoryByAnimeId(animeId: String)
 }

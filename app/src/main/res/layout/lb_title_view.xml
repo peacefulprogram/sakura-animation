@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <ImageView
+        android:id="@+id/title_badge"
+        style="?attr/browseTitleIconStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="@dimen/lb_browse_title_icon_height"
+        android:layout_gravity="center_vertical|end"
+        android:adjustViewBounds="true"
+        android:maxWidth="@dimen/lb_browse_title_icon_max_width"
+        android:src="@null"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/title_text"
+        style="?attr/browseTitleTextStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="@dimen/lb_browse_title_height"
+        android:layout_gravity="center_vertical|end" />
+
+
+    <androidx.leanback.widget.SearchOrbView
+        android:id="@+id/title_orb"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:transitionGroup="true"
+        android:layout_gravity="center_vertical|start"
+        android:visibility="gone" />
+
+    <androidx.leanback.widget.HorizontalGridView
+        android:id="@+id/icon_row"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_gravity="center_vertical|start"
+        android:focusable="true">
+
+    </androidx.leanback.widget.HorizontalGridView>
+
+</merge>

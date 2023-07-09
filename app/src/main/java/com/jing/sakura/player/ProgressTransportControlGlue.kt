@@ -15,6 +15,7 @@
  */
 package com.jing.sakura.player
 
+import android.app.Activity
 import android.content.Context
 import android.view.KeyEvent
 import android.view.View
@@ -27,7 +28,6 @@ import androidx.leanback.widget.Action
 import androidx.leanback.widget.ArrayObjectAdapter
 import androidx.leanback.widget.PlaybackControlsRow.FastForwardAction
 import androidx.leanback.widget.PlaybackControlsRow.RewindAction
-import androidx.navigation.NavController
 import com.google.android.exoplayer2.ext.leanback.LeanbackPlayerAdapter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -59,7 +59,7 @@ import java.util.concurrent.TimeUnit
 class ProgressTransportControlGlue<T : PlayerAdapter>(
     context: Context,
     private val lifeCycleScope: CoroutineScope,
-    private val navController: NavController,
+    private val activity: Activity,
     impl: T,
     private val updateProgress: () -> Unit,
     private val chooseEpisode: () -> Unit = {}
@@ -125,11 +125,11 @@ class ProgressTransportControlGlue<T : PlayerAdapter>(
             }
             if (!playerAdapter.isPlaying) {
                 backPressed = false
-                navController.popBackStack()
+                activity.finish()
                 return true
             }
             if (backPressed) {
-                navController.popBackStack()
+                activity.finish()
                 return true
             }
             backPressed = true

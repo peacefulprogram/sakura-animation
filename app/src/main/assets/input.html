@@ -24,6 +24,13 @@
         const wsUrl = 'ws://' + location.host + '/input'
         const ws = new WebSocket(wsUrl)
         messageContainer.innerText = '已连接到app'
+        var pingTimer = setInterval(() => {
+            debugger
+            ws.send(JSON.stringify({
+                operation: 'PING'
+            }))
+        }, 5000)
+
         const inputHandler = function (event) {
             ws.send(JSON.stringify({
                 operation: 'INPUT',
@@ -45,13 +52,14 @@
             }
         }
         inputEl.addEventListener('input', inputHandler)
-        inputEl.addEventListener('keydown',function (keyEvent) {
+        inputEl.addEventListener('keydown', function (keyEvent) {
             if (keyEvent.code === 'Enter' && inputEl.value.trim()) {
                 submitHandler()
             }
         })
         btn.addEventListener('click', submitHandler)
         ws.onclose = function (event) {
+            pingTimer && clearInterval(pingTimer)
             inputEl.removeEventListener('input', inputHandler)
             btn.removeEventListener('click', submitHandler)
             messageContainer.innerText = '连接已关闭,原因:' + event.reason

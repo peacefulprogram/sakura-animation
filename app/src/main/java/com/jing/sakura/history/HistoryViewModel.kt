@@ -5,14 +5,10 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.*
 import com.jing.sakura.room.VideoHistoryDao
 import com.jing.sakura.room.VideoHistoryEntity
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import javax.inject.Inject
 
-@HiltViewModel
-class HistoryViewModel @Inject constructor(private val videoHistoryDao: VideoHistoryDao) :
+class HistoryViewModel(private val videoHistoryDao: VideoHistoryDao) :
     ViewModel() {
 
     @OptIn(ExperimentalPagingApi::class)
@@ -24,14 +20,16 @@ class HistoryViewModel @Inject constructor(private val videoHistoryDao: VideoHis
     }.flow
 
 
-    fun deleteAllHistory(onFinish: () -> Unit) {
+    fun deleteAllHistory() {
         viewModelScope.launch(Dispatchers.IO) {
             videoHistoryDao.deleteAll()
-            withContext(Dispatchers.Main) {
-                onFinish()
-            }
         }
+    }
 
+    fun deleteHistoryByAnimeId(animeId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            videoHistoryDao.deleteHistoryByAnimeId(animeId)
+        }
     }
 
     @OptIn(ExperimentalPagingApi::class)

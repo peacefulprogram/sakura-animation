@@ -1,19 +1,14 @@
 <resources>
     <string name="app_name">樱花动漫</string>
-    <string name="browse_title">Videos by Your Company</string>
-    <string name="related_movies">Related Videos</string>
-    <string name="grid_view">Grid View</string>
-    <string name="error_fragment">Error Fragment</string>
-    <string name="personal_settings">Personal Settings</string>
-    <string name="watch_trailer_1">Watch trailer</string>
-    <string name="watch_trailer_2">FREE</string>
-    <string name="rent_1">Rent By Day</string>
-    <string name="rent_2">From $1.99</string>
-    <string name="buy_1">Buy and Own</string>
-    <string name="buy_2">AT $9.99</string>
-    <string name="movie">Movie</string>
-
-    <!-- Error messages -->
-    <string name="error_fragment_message">An error occurred</string>
-    <string name="dismiss_error">Dismiss</string>
+    <string name="speak_search_keyword">请说出要搜索的内容</string>
+    <string name="input_search_keyword">输入关键词</string>
+    <string name="button_retry">重试</string>
+    <string name="related_videos">相关动漫</string>
+    <string name="video_description">简介</string>
+    <string name="playback_history">历史记录</string>
+    <string name="click_ok_del_tip">长按【ok】删除</string>
+    <string name="grid_no_data_tip">什么也没有哦</string>
+    <string name="confirm_delete_template">是否删除%s?</string>
+    <string name="button_delete_all">删除全部</string>
+    <string name="button_delete">删除</string>
 </resources>

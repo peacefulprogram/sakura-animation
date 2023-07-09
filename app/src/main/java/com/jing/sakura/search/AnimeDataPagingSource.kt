@@ -4,11 +4,11 @@ import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.jing.sakura.data.AnimeData
 import com.jing.sakura.repo.WebPageRepository
+import kotlinx.coroutines.CancellationException
 
 class AnimeDataPagingSource(
     private val keyword: String,
-    private val webPageRepository: WebPageRepository,
-    private val onTotalCount: (String) -> Unit = {}
+    private val webPageRepository: WebPageRepository
 ) : PagingSource<Int, AnimeData>() {
     override fun getRefreshKey(state: PagingState<Int, AnimeData>): Int? {
         return null
@@ -20,9 +20,11 @@ class AnimeDataPagingSource(
         return try {
             val data = webPageRepository.searchAnimation(keyword, page)
             val nextKey = if (data.hasNextPage) page + 1 else null
-            onTotalCount(data.totalString)
             LoadResult.Page(data.animeList, prevKey, nextKey)
         } catch (ex: Exception) {
+            if (ex is CancellationException) {
+                throw ex
+            }
             LoadResult.Error(ex)
         }
 

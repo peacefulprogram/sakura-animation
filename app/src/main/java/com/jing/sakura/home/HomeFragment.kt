@@ -1,30 +1,50 @@
 package com.jing.sakura.home
 
+import android.graphics.Rect
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
-import android.view.*
-import android.widget.FrameLayout.LayoutParams
-import androidx.fragment.app.viewModels
+import android.view.KeyEvent
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import androidx.annotation.ColorRes
+import androidx.annotation.DrawableRes
+import androidx.core.content.ContextCompat
 import androidx.leanback.app.BackgroundManager
 import androidx.leanback.app.BrowseSupportFragment
-import androidx.leanback.widget.*
-import androidx.navigation.fragment.findNavController
+import androidx.leanback.widget.ArrayObjectAdapter
+import androidx.leanback.widget.DiffCallback
+import androidx.leanback.widget.HeaderItem
+import androidx.leanback.widget.HorizontalGridView
+import androidx.leanback.widget.ImageCardView
+import androidx.leanback.widget.ListRow
+import androidx.leanback.widget.ListRowPresenter
+import androidx.leanback.widget.ListRowView
+import androidx.leanback.widget.OnItemViewClickedListener
+import androidx.leanback.widget.RowPresenter
+import androidx.leanback.widget.SearchOrbView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.palette.graphics.Palette
+import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView.Adapter
+import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.jing.sakura.R
 import com.jing.sakura.data.AnimeData
 import com.jing.sakura.data.HomePageData
 import com.jing.sakura.data.Resource
-import com.jing.sakura.extend.dpToPixels
-import com.jing.sakura.extend.observeLiveData
+import com.jing.sakura.detail.DetailActivity
 import com.jing.sakura.extend.showShortToast
+import com.jing.sakura.history.HistoryActivity
 import com.jing.sakura.presenter.AnimeCardPresenter
-import dagger.hilt.android.AndroidEntryPoint
+import com.jing.sakura.search.SearchActivity
+import com.jing.sakura.timeline.UpdateTimelineActivity
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import org.koin.android.ext.android.get
 
-@AndroidEntryPoint
 class HomeFragment : BrowseSupportFragment() {
-
-    private lateinit var historyIconView: View
-
 
     private val backgroundManager by lazy {
         val activity = requireActivity()
@@ -43,10 +63,11 @@ class HomeFragment : BrowseSupportFragment() {
         }
     })
 
-    private val viewModel by viewModels<HomeViewModel>()
+    private lateinit var viewModel: HomeViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         headersState = HEADERS_DISABLED
+        viewModel = get()
         super.onCreate(savedInstanceState)
         title = getString(R.string.app_name)
 
@@ -56,42 +77,32 @@ class HomeFragment : BrowseSupportFragment() {
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        val root = super.onCreateView(inflater, container, savedInstanceState)
-        historyIconView = layoutInflater.inflate(R.layout.history_icon_layout, container, false)
-        LayoutParams(historyIconView.layoutParams.width, historyIconView.layoutParams.height)
-            .apply {
-                gravity = Gravity.CENTER_VERTICAL or Gravity.START
-                marginStart = (52 * 1.3).dpToPixels(requireActivity()).toInt()
-                historyIconView.layoutParams = this
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+    ): View {
+        val root = super.onCreateView(inflater, container, savedInstanceState)!!
+        val iconRow = root.findViewById<HorizontalGridView>(R.id.icon_row)
+        iconRow.addItemDecoration(object : RecyclerView.ItemDecoration() {
+            override fun getItemOffsets(
+                outRect: Rect, view: View, parent: RecyclerView, state: RecyclerView.State
+            ) {
+                outRect.right =
+                    requireContext().resources.getDimension(R.dimen.home_icon_gap).toInt()
             }
-        val titleView = titleView as TitleView
-        historyIconView.setOnFocusChangeListener { _, hasFocus ->
-            val zoom = if (hasFocus) 1.2f else 1f
-            historyIconView.animate().scaleX(zoom).scaleY(zoom).setDuration(200L).start()
-        }
-        historyIconView.setOnClickListener {
-            findNavController().navigate(HomeFragmentDirections.actionHomeFragmentToHistoryFragment())
-        }
-        titleView.searchAffordanceView.setOnKeyListener { _, keyCode, _ ->
-            if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
-                historyIconView.requestFocus()
-                true
-            } else {
-                false
-            }
-        }
-        titleView.addView(historyIconView)
+        })
+        iconRow.adapter =
+            IconRowAdapter(listOf(TopIcon(icon = R.drawable.search_icon, color = R.color.green400) {
+                SearchActivity.startActivity(requireContext())
+            }, TopIcon(icon = R.drawable.history_icon, color = R.color.yellow500) {
+                HistoryActivity.startActivity(requireContext())
+            }, TopIcon(icon = R.drawable.timeline_icon, color = R.color.cyan500) {
+                UpdateTimelineActivity.startActivity(requireContext())
+            }))
         return root;
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         view.setOnKeyListener { _, keyCode, _ ->
-            println(keyCode)
             if (keyCode == KeyEvent.KEYCODE_MENU) {
                 viewModel.loadData()
                 true
@@ -101,16 +112,13 @@ class HomeFragment : BrowseSupportFragment() {
         }
         observeHomePageData()
         setupItemClickListener()
-        setOnSearchClickedListener {
-            findNavController().navigate(HomeFragmentDirections.actionHomeFragmentToSearchFragment())
-        }
         this.adapter = fragmentAdapter
 //        setDynamicBackground()
     }
 
 
-    override fun onResume() {
-        super.onResume()
+    override fun onStart() {
+        super.onStart()
         viewModel.loadData()
     }
 
@@ -118,11 +126,7 @@ class HomeFragment : BrowseSupportFragment() {
     private fun setupItemClickListener() {
         onItemViewClickedListener = OnItemViewClickedListener { _, item, _, _ ->
             with(item as AnimeData) {
-                findNavController().navigate(
-                    HomeFragmentDirections.actionHomeFragmentToAnimeDetailFragment(
-                        url
-                    )
-                )
+                DetailActivity.startActivity(requireContext(), url)
             }
 
         }
@@ -151,17 +155,18 @@ class HomeFragment : BrowseSupportFragment() {
 
         val rows = homePageData.seriesList.map { series ->
             val headerItem = HeaderItem(series.name)
-            val rowAdapter =
-                rowAdapterCache.computeIfAbsent(series.name) {
-                    ArrayObjectAdapter(
-                        AnimeCardPresenter(
-                            cardWidth,
-                            cardHeight
-                        )
+            val rowAdapter = if (rowAdapterCache.containsKey(series.name)) {
+                rowAdapterCache[series.name]!!
+            } else {
+                ArrayObjectAdapter(
+                    AnimeCardPresenter(
+                        cardWidth, cardHeight
                     )
-                }.apply {
-                    setItems(series.value, diffCallback)
+                ).apply {
+                    rowAdapterCache[series.name] = this
                 }
+            }
+            rowAdapter.setItems(series.value, diffCallback)
             ListRow(headerItem, rowAdapter)
         }
 
@@ -185,21 +190,51 @@ class HomeFragment : BrowseSupportFragment() {
     }
 
     private fun observeHomePageData() {
-        observeLiveData(viewModel.homePageData) { data ->
-            when (data) {
-//                is Resource.Loading -> prepareEntranceTransition()
-                is Resource.Success -> {
-                    renderData(data.data)
-                    startEntranceTransition()
+        lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.homePageData.collectLatest { data ->
+                    when (data) {
+                        is Resource.Success -> {
+                            renderData(data.data)
+                            startEntranceTransition()
+                        }
+
+                        is Resource.Error -> {
+                            requireContext().showShortToast("请求数据失败:${data.message}")
+                            startEntranceTransition()
+                        }
+
+                        else -> {}
+                    }
+
                 }
-                is Resource.Error -> {
-                    requireContext().showShortToast("请求数据失败:${data.message}")
-                    startEntranceTransition()
-                }
-                else -> {}
             }
         }
     }
 
+    class IconRowAdapter(private val iconList: List<TopIcon>) : Adapter<OrbViewHolder>() {
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): OrbViewHolder {
+            val view = SearchOrbView(parent.context, null)
+            return OrbViewHolder(view)
+        }
+
+        override fun getItemCount(): Int = iconList.size
+
+        override fun onBindViewHolder(holder: OrbViewHolder, position: Int) {
+            with(iconList[position]) {
+                with(holder.searchOrbView) {
+                    orbIcon = ContextCompat.getDrawable(context, icon)
+                    orbColor = ContextCompat.getColor(context, color)
+                    setOnOrbClickedListener { onClick() }
+                }
+            }
+        }
+    }
+
+    class OrbViewHolder(val searchOrbView: SearchOrbView) : ViewHolder(searchOrbView)
+
+    data class TopIcon(
+        @DrawableRes val icon: Int, @ColorRes val color: Int, val onClick: () -> Unit
+    )
 
 }
