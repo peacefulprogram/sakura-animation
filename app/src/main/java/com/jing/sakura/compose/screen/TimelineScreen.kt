@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalTvMaterial3Api::class)
+
 package com.jing.sakura.compose.screen
 
 import androidx.compose.foundation.BorderStroke
@@ -55,7 +57,7 @@ fun TimelineScreen(viewModel: TimelineViewModel) {
             Text(text = "更新时间表", style = MaterialTheme.typography.headlineMedium)
             Spacer(modifier = Modifier.height(15.dp))
             if (timeline is Resource.Success) {
-                TimeLine(timeline.data)
+                TimeLine(timeline.data, sourceId = viewModel.sourceId)
             }
         }
         if (timeline == Resource.Loading) {
@@ -69,7 +71,7 @@ fun TimelineScreen(viewModel: TimelineViewModel) {
 }
 
 @Composable
-fun TimeLine(data: UpdateTimeLine) {
+fun TimeLine(data: UpdateTimeLine, sourceId: String) {
     val defaultFocusRequester = remember {
         FocusRequester()
     }
@@ -84,7 +86,10 @@ fun TimeLine(data: UpdateTimeLine) {
                     } else {
                         this
                     }
-                }, name = timeline.first, animeList = timeline.second
+                },
+                name = timeline.first,
+                animeList = timeline.second,
+                sourceId = sourceId
             )
         }
     })
@@ -100,7 +105,10 @@ fun TimeLine(data: UpdateTimeLine) {
 @OptIn(ExperimentalTvFoundationApi::class)
 @Composable
 fun TimeLineColumn(
-    modifier: Modifier = Modifier, name: String, animeList: List<AnimeData>
+    modifier: Modifier = Modifier,
+    name: String,
+    animeList: List<AnimeData>,
+    sourceId: String
 ) {
     val context = LocalContext.current
     FocusGroup(modifier = modifier) {
@@ -127,7 +135,7 @@ fun TimeLineColumn(
                             }
                         }, name = anime.title
                     ) {
-                        DetailActivity.startActivity(context, anime.url)
+                        DetailActivity.startActivity(context, anime.id, sourceId)
                     }
                 }
             })

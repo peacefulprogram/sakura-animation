@@ -10,7 +10,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class SearchViewModel(
-    private val searchHistoryDao: SearchHistoryDao
+    private val searchHistoryDao: SearchHistoryDao,
+    val sourceId:String
 ) : ViewModel() {
 
     val searchHistoryPager = Pager(config = PagingConfig(pageSize = 10)) {

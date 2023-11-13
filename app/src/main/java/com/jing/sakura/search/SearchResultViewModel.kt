@@ -9,7 +9,8 @@ import com.jing.sakura.repo.WebPageRepository
 
 class SearchResultViewModel(
     private val keyword: String,
-    private val webPageRepository: WebPageRepository
+    private val webPageRepository: WebPageRepository,
+    val sourceId:String
 ) : ViewModel() {
 
     val pager = Pager(
@@ -18,6 +19,7 @@ class SearchResultViewModel(
             AnimeDataPagingSource(
                 keyword,
                 webPageRepository,
+                sourceId = sourceId
             )
         }
     ).flow.cachedIn(viewModelScope)

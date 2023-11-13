@@ -26,8 +26,9 @@ class DetailActivity : ComponentActivity() {
     @OptIn(ExperimentalTvMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val url = intent.getStringExtra("url")!!
-        val viewModel = get<DetailPageViewModel> { parametersOf(url) }
+        val videoId = intent.getStringExtra("id")!!
+        val sourceId = intent.getStringExtra("source")!!
+        val viewModel = get<DetailPageViewModel> { parametersOf(videoId, sourceId) }
         setContent {
             SakuraTheme {
                 Box(
@@ -52,9 +53,10 @@ class DetailActivity : ComponentActivity() {
     }
 
     companion object {
-        fun startActivity(context: Context, url: String) {
+        fun startActivity(context: Context, animeId: String, sourceId: String) {
             Intent(context, DetailActivity::class.java).apply {
-                putExtra("url", url)
+                putExtra("id", animeId)
+                putExtra("source", sourceId)
                 context.startActivity(this)
             }
         }

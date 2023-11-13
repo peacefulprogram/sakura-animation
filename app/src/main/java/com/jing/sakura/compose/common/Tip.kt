@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalTvMaterial3Api::class)
+
 package com.jing.sakura.compose.common
 
 import androidx.compose.foundation.BorderStroke

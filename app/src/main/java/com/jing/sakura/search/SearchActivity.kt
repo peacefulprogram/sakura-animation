@@ -19,14 +19,15 @@ import com.jing.sakura.R
 import com.jing.sakura.compose.screen.SearchScreen
 import com.jing.sakura.compose.theme.SakuraTheme
 import org.koin.android.ext.android.get
+import org.koin.core.parameter.parametersOf
 
 class SearchActivity : ComponentActivity() {
 
     @OptIn(ExperimentalTvMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val viewModel = get<SearchViewModel>()
+        val sourceId = intent.getStringExtra("source")!!
+        val viewModel = get<SearchViewModel> { parametersOf(sourceId) }
         setContent {
             SakuraTheme {
                 Box(
@@ -51,8 +52,9 @@ class SearchActivity : ComponentActivity() {
     }
 
     companion object {
-        fun startActivity(context: Context) {
+        fun startActivity(context: Context, sourceId: String) {
             Intent(context, SearchActivity::class.java).let {
+                it.putExtra("source", sourceId)
                 context.startActivity(it)
             }
         }

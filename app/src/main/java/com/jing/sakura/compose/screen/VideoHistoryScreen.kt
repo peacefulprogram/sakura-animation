@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalTvMaterial3Api::class)
+
 package com.jing.sakura.compose.screen
 
 import android.util.Log
@@ -32,9 +34,9 @@ import androidx.tv.foundation.lazy.grid.TvGridCells
 import androidx.tv.foundation.lazy.grid.TvGridItemSpan
 import androidx.tv.foundation.lazy.grid.TvLazyVerticalGrid
 import androidx.tv.foundation.lazy.grid.rememberTvLazyGridState
+import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import com.jing.sakura.Constants
 import com.jing.sakura.R
 import com.jing.sakura.compose.common.ConfirmDeleteDialog
 import com.jing.sakura.compose.common.ErrorTip
@@ -117,6 +119,7 @@ fun VideoHistoryScreen(viewModel: HistoryViewModel) {
                             onLongClick = {
                                 confirmRemoveVideo = video
                             },
+                            sourceName = viewModel.getSourceName(video.sourceId),
                             onKeyEvent = { keyEvent ->
                                 if (keyEvent.key == Key.Menu && keyEvent.type == KeyEventType.KeyUp) {
                                     coroutineScope.launch {
@@ -131,7 +134,8 @@ fun VideoHistoryScreen(viewModel: HistoryViewModel) {
                         ) {
                             DetailActivity.startActivity(
                                 context,
-                                "${Constants.SAKURA_URL}/show/${video.animeId}.html"
+                                video.animeId,
+                                video.sourceId
                             )
 
                         }
@@ -172,7 +176,7 @@ fun VideoHistoryScreen(viewModel: HistoryViewModel) {
                 gridState.scrollToItem(0)
                 firstVideoFocusRequester.requestFocus()
             }
-            viewModel.deleteHistoryByAnimeId(removeVideo.animeId)
+            viewModel.deleteHistoryByAnimeId(removeVideo.animeId, removeVideo.sourceId)
         },
         onDeleteAllClick = {
             confirmRemoveVideo = null

@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalTvMaterial3Api::class)
+
 package com.jing.sakura.compose.screen
 
 import androidx.compose.animation.AnimatedVisibility
@@ -191,7 +193,8 @@ fun DetailScreen(viewModel: DetailPageViewModel) {
                             animeId = videoDetail.animeId,
                             coverUrl = videoDetail.imageUrl,
                             playIndex = epIndex,
-                            playlist = playlist.episodeList
+                            playlist = playlist.episodeList,
+                            sourceId = viewModel.sourceId
                         )
                     )
                 }
@@ -200,14 +203,14 @@ fun DetailScreen(viewModel: DetailPageViewModel) {
                 }
             }
             item {
-                RelativeVideoRow(videoDetail.otherAnimeList)
+                RelativeVideoRow(videoDetail.otherAnimeList, viewModel.sourceId)
             }
         }, verticalArrangement = Arrangement.spacedBy(10.dp)
     )
 }
 
 @Composable
-fun RelativeVideoRow(videos: List<AnimeData>) {
+fun RelativeVideoRow(videos: List<AnimeData>, sourceId: String) {
     if (videos.isEmpty()) {
         return
     }
@@ -224,7 +227,7 @@ fun RelativeVideoRow(videos: List<AnimeData>) {
                             dimensionResource(id = R.dimen.poster_height)
                         ), imageUrl = video.imageUrl, title = video.title
                     ) {
-                        DetailActivity.startActivity(context, video.url)
+                        DetailActivity.startActivity(context, video.id, sourceId)
                     }
                 }
             }, contentPadding = PaddingValues(horizontal = 10.dp, vertical = 15.dp)

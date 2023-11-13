@@ -26,7 +26,8 @@ class SearchResultActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val kw = intent.getStringExtra("kw")!!
-        val viewModel = get<SearchResultViewModel> { parametersOf(kw) }
+        val sourceId = intent.getStringExtra("source")!!
+        val viewModel = get<SearchResultViewModel> { parametersOf(kw, sourceId) }
         setContent {
             SakuraTheme {
                 Box(
@@ -51,9 +52,10 @@ class SearchResultActivity : ComponentActivity() {
     }
 
     companion object {
-        fun startActivity(context: Context, keyword: String) {
+        fun startActivity(context: Context, keyword: String,sourceId:String) {
             Intent(context, SearchResultActivity::class.java).apply {
                 putExtra("kw", keyword)
+                putExtra("source", sourceId)
                 context.startActivity(this)
             }
         }

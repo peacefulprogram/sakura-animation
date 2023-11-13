@@ -3,9 +3,10 @@ package com.jing.sakura.room
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "video_history")
+@Entity(tableName = "video_history", primaryKeys = ["episodeId", "sourceId"])
 data class VideoHistoryEntity(
-    @PrimaryKey val episodeId: String,
+    val episodeId: String,
+    val sourceId: String,
     val animeName: String,
     val animeId: String,
     val lastEpisodeName: String,

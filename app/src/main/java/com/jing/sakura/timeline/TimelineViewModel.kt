@@ -12,7 +12,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class TimelineViewModel(
-    private val repository: WebPageRepository
+    private val repository: WebPageRepository,
+    val sourceId:String
 ) : ViewModel() {
 
     private val _timelines: MutableStateFlow<Resource<UpdateTimeLine>> =
@@ -28,7 +29,7 @@ class TimelineViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 _timelines.emit(Resource.Loading)
-                _timelines.emit(Resource.Success(repository.fetchUpdateTimeline()))
+                _timelines.emit(Resource.Success(repository.fetchUpdateTimeline(sourceId)))
             } catch (ex: Exception) {
                 if (ex is CancellationException) {
                     throw ex

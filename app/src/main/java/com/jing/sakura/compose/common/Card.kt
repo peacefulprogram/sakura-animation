@@ -31,6 +31,7 @@ fun VideoCard(
     imageUrl: String,
     title: String,
     subTitle: String = "",
+    sourceName:String = "",
     onKeyEvent: ((KeyEvent) -> Boolean)? = null,
     onLongClick: (() -> Unit)? = null,
     onClick: () -> Unit = {},
@@ -59,6 +60,9 @@ fun VideoCard(
                 .fillMaxWidth()
                 .padding(start = 10.dp, end = 10.dp, bottom = 10.dp)
         ) {
+            if (sourceName.isNotEmpty()) {
+                Text(text = sourceName, maxLines = 1)
+            }
             Text(text = title, maxLines = 1, modifier = Modifier.run {
                 if (focused) {
                     basicMarquee()

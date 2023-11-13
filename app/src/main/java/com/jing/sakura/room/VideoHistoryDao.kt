@@ -25,11 +25,11 @@ interface VideoHistoryDao {
     )
     fun queryHistory(): PagingSource<Int, VideoHistoryEntity>
 
-    @Query("select * from video_history where animeId = :animeId order by updateTime desc limit 1")
-    fun queryLastHistoryOfAnimeId(animeId: String): VideoHistoryEntity?
+    @Query("select * from video_history where animeId = :animeId and sourceId = :sourceId order by updateTime desc limit 1")
+    fun queryLastHistoryOfAnimeId(animeId: String, sourceId: String): VideoHistoryEntity?
 
-    @Query("select * from video_history where episodeId = :episodeId")
-    fun queryHistoryByEpisodeId(episodeId: String): VideoHistoryEntity?
+    @Query("select * from video_history where episodeId = :episodeId and sourceId = :sourceId")
+    fun queryHistoryByEpisodeId(episodeId: String, sourceId: String): VideoHistoryEntity?
 
     @Query("delete from video_history")
     fun deleteAll()
@@ -37,6 +37,6 @@ interface VideoHistoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun saveHistory(history: VideoHistoryEntity)
 
-    @Query("delete from video_history where animeId = :animeId")
-    fun deleteHistoryByAnimeId(animeId: String)
+    @Query("delete from video_history where animeId = :animeId and sourceId = :sourceId")
+    fun deleteHistoryByAnimeId(animeId: String, sourceId: String)
 }

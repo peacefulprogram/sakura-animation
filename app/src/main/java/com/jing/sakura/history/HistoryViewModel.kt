@@ -3,12 +3,16 @@ package com.jing.sakura.history
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.*
+import com.jing.sakura.repo.WebPageRepository
 import com.jing.sakura.room.VideoHistoryDao
 import com.jing.sakura.room.VideoHistoryEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class HistoryViewModel(private val videoHistoryDao: VideoHistoryDao) :
+class HistoryViewModel(
+    private val videoHistoryDao: VideoHistoryDao,
+    private val repository: WebPageRepository
+) :
     ViewModel() {
 
     @OptIn(ExperimentalPagingApi::class)
@@ -26,9 +30,11 @@ class HistoryViewModel(private val videoHistoryDao: VideoHistoryDao) :
         }
     }
 
-    fun deleteHistoryByAnimeId(animeId: String) {
+    fun getSourceName(sourceId: String): String = repository.requireAnimationSource(sourceId).name
+
+    fun deleteHistoryByAnimeId(animeId: String, sourceId: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            videoHistoryDao.deleteHistoryByAnimeId(animeId)
+            videoHistoryDao.deleteHistoryByAnimeId(animeId, sourceId)
         }
     }
 

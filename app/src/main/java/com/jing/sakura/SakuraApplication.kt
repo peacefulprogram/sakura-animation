@@ -53,7 +53,7 @@ class SakuraApplication : Application() {
     private fun roomModule() = module {
         single {
             val builder = Room.databaseBuilder(context, SakuraDatabase::class.java, "sk_db")
-                .addMigrations(SakuraDatabase.MIGRATION_1_2)
+                .addMigrations(SakuraDatabase.MIGRATION_1_2, SakuraDatabase.MIGRATION_2_3)
             if (BuildConfig.DEBUG) {
                 builder.setQueryCallback({ sqlQuery, bindArgs ->
                     Log.d("RoomQuery", "sql: $sqlQuery, args: $bindArgs")
@@ -72,13 +72,13 @@ class SakuraApplication : Application() {
     }
 
     private fun viewModelModule() = module {
-        viewModel { holder -> DetailPageViewModel(holder.get(), get(), get()) }
+        viewModel { holder -> DetailPageViewModel(holder.get(), get(), get(), holder.get()) }
         viewModel { holder -> VideoPlayerViewModel(holder.get(), get(), get()) }
         viewModelOf(::HomeViewModel)
-        viewModelOf(::SearchViewModel)
+        viewModel { holder -> SearchViewModel(get(), holder.get()) }
+        viewModel { holder -> TimelineViewModel(get(), holder.get()) }
         viewModelOf(::HistoryViewModel)
-        viewModelOf(::TimelineViewModel)
-        viewModel { holder -> SearchResultViewModel(holder.get(), get()) }
+        viewModel { holder -> SearchResultViewModel(holder.get(), get(), holder.get()) }
 
     }
 

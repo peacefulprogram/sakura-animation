@@ -79,9 +79,10 @@ class VideoPlayerViewModel(
         _videoUrl.emit(Resource.Loading)
         withContext(Dispatchers.IO) {
             try {
-                val resp = repository.fetchVideoUrl(episode.url)
+                val resp = repository.fetchVideoUrl(episode.episodeId, sourceId = anime.sourceId)
                 val history = videoHistoryDao.queryHistoryByEpisodeId(
-                    episodeId = episode.episodeId
+                    episodeId = episode.episodeId,
+                    sourceId = anime.sourceId
                 )
                 when (resp) {
                     is Resource.Error -> _videoUrl.emit(Resource.Error(resp.message))
@@ -123,7 +124,8 @@ class VideoPlayerViewModel(
                         updateTime = System.currentTimeMillis(),
                         lastPlayTime = currentPlayPosition,
                         coverUrl = anime.coverUrl,
-                        videoDuration = videoDuration
+                        videoDuration = videoDuration,
+                        sourceId = anime.sourceId
                     )
                 }
                 videoHistoryDao.saveHistory(history)

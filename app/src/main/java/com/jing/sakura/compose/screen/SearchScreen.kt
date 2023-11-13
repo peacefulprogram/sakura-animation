@@ -85,7 +85,7 @@ fun SearchScreen(viewModel: SearchViewModel) {
         if (keyword.isNotBlank()) {
             keyword.trim().let {
                 viewModel.saveHistory(it)
-                SearchResultActivity.startActivity(context, it)
+                SearchResultActivity.startActivity(context, it, viewModel.sourceId)
             }
         }
     }

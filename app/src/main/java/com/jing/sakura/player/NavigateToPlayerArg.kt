@@ -8,5 +8,6 @@ data class NavigateToPlayerArg(
     val animeId: String,
     val coverUrl: String,
     val playIndex: Int,
-    val playlist: List<AnimePlayListEpisode>
+    val playlist: List<AnimePlayListEpisode>,
+    val sourceId:String
 ) : Serializable

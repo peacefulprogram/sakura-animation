@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalTvMaterial3Api::class)
+
 package com.jing.sakura.compose.screen
 
 import androidx.compose.foundation.layout.Box
@@ -18,6 +20,7 @@ import androidx.tv.foundation.lazy.grid.TvGridCells
 import androidx.tv.foundation.lazy.grid.TvGridItemSpan
 import androidx.tv.foundation.lazy.grid.TvLazyVerticalGrid
 import androidx.tv.foundation.lazy.grid.rememberTvLazyGridState
+import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.jing.sakura.R
@@ -67,7 +70,7 @@ fun SearchResultScreen(viewModel: SearchResultViewModel) {
                             imageUrl = video.imageUrl,
                             title = video.title
                         ) {
-                            DetailActivity.startActivity(context, video.url)
+                            DetailActivity.startActivity(context, video.id, viewModel.sourceId)
                         }
                     }
                 }

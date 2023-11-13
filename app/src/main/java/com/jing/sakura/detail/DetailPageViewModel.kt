@@ -15,12 +15,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class DetailPageViewModel constructor(
-    private val url: String,
+    private val animeId: String,
     private val repository: WebPageRepository,
-    private val videoHistoryDao: VideoHistoryDao
+    private val videoHistoryDao: VideoHistoryDao,
+    val sourceId: String
 ) : ViewModel() {
-
-    val animeId = url.substring(url.lastIndexOf('/') + 1, url.lastIndexOf('.'))
 
     private var _detailPageData = MutableStateFlow<Resource<AnimeDetailPageData>>(Resource.Loading)
 
@@ -40,7 +39,7 @@ class DetailPageViewModel constructor(
         viewModelScope.launch(Dispatchers.IO) {
             _detailPageData.emit(Resource.Loading)
             try {
-                repository.fetchDetailPage(url).also {
+                repository.fetchDetailPage(animeId, sourceId).also {
                     _detailPageData.emit(Resource.Success(it))
                 }
             } catch (ex: Exception) {
@@ -57,7 +56,7 @@ class DetailPageViewModel constructor(
 
     fun fetchHistory() {
         viewModelScope.launch(Dispatchers.Default) {
-            videoHistoryDao.queryLastHistoryOfAnimeId(animeId)?.let {
+            videoHistoryDao.queryLastHistoryOfAnimeId(animeId, sourceId)?.let {
                 _latestProgress.emit(Resource.Success(it))
             }
         }

@@ -19,13 +19,14 @@ import com.jing.sakura.R
 import com.jing.sakura.compose.screen.TimelineScreen
 import com.jing.sakura.compose.theme.SakuraTheme
 import org.koin.android.ext.android.get
+import org.koin.core.parameter.parametersOf
 
 class UpdateTimelineActivity : ComponentActivity() {
 
     @OptIn(ExperimentalTvMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val viewModel = get<TimelineViewModel>()
+        val viewModel = get<TimelineViewModel>{ parametersOf(intent.getStringExtra("source")) }
         setContent {
             SakuraTheme {
                 Box(
@@ -50,8 +51,9 @@ class UpdateTimelineActivity : ComponentActivity() {
     }
 
     companion object {
-        fun startActivity(context: Context) {
+        fun startActivity(context: Context, sourceId: String) {
             Intent(context, UpdateTimelineActivity::class.java).apply {
+                putExtra("source", sourceId)
                 context.startActivity(this)
             }
         }
