@@ -5,5 +5,9 @@ sealed class Resource<in T> {
 
     data class Error<T>(val message: String) : Resource<T>()
 
-    object Loading : Resource<Any>()
+    data class Loading(val silent: Boolean = false) : Resource<Any>()
+
+    companion object {
+        val Loading = Loading(silent = false)
+    }
 }

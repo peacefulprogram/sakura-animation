@@ -137,7 +137,7 @@ class HomeFragment : BrowseSupportFragment() {
         super.onViewCreated(view, savedInstanceState)
         view.setOnKeyListener { _, keyCode, _ ->
             if (keyCode == KeyEvent.KEYCODE_MENU) {
-                viewModel.loadData()
+                viewModel.loadData(false)
                 true
             } else {
                 false
@@ -157,7 +157,7 @@ class HomeFragment : BrowseSupportFragment() {
 
     override fun onStart() {
         super.onStart()
-        viewModel.loadData()
+        viewModel.loadData(true)
     }
 
 
@@ -242,8 +242,10 @@ class HomeFragment : BrowseSupportFragment() {
                             requireContext().showShortToast("请求数据失败:${data.message}")
                         }
 
-                        else -> {
-                            progressBarManager.show()
+                        is Resource.Loading -> {
+                            if (!data.silent) {
+                                progressBarManager.show()
+                            }
                         }
                     }
 
@@ -258,6 +260,7 @@ class HomeFragment : BrowseSupportFragment() {
             allSources = viewModel.getAllSources(),
             currentSourceId = viewModel.currentSourceId,
         ) {
+            rowAdapterCache.clear()
             viewModel.changeSource(it.first)
         }.apply {
             showNow(fragmentManager, "")

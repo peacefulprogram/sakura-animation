@@ -14,11 +14,12 @@ interface VideoHistoryDao {
         select v.* 
         from video_history v 
         inner join (
-                select vv.animeId,max(vv.updateTime) updateTime
+                select vv.animeId,max(vv.updateTime) updateTime, vv.sourceId
                 from video_history vv 
-                group by vv.animeId
+                group by vv.animeId, vv.sourceId
             ) tmp
             on tmp.animeId = v.animeId
+                and v.sourceId = tmp.sourceId
                 and tmp.updateTime = v.updateTime
         order by v.updateTime desc
     """

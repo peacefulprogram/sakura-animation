@@ -49,12 +49,12 @@ class HomeViewModel(
         viewModelScope.launch {
             _currentSource.emit(source)
         }
-        loadData()
+        loadData(false)
     }
 
-    fun loadData() {
+    fun loadData(silent: Boolean = false) {
         viewModelScope.launch(Dispatchers.IO) {
-            _homePageData.emit(Resource.Loading)
+            _homePageData.emit(Resource.Loading(silent = silent))
             try {
                 repository.fetchHomePage(currentSourceId).also {
                     _homePageData.emit(Resource.Success(it))

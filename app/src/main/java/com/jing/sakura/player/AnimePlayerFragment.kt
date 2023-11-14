@@ -3,8 +3,10 @@ package com.jing.sakura.player
 import android.graphics.Color
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
 import androidx.core.graphics.drawable.toDrawable
+import androidx.leanback.app.ProgressBarManager
 import androidx.leanback.app.VideoSupportFragment
 import androidx.leanback.app.VideoSupportFragmentGlueHost
 import androidx.lifecycle.Lifecycle
@@ -17,6 +19,7 @@ import com.google.android.exoplayer2.ext.leanback.LeanbackPlayerAdapter
 import com.jing.sakura.data.Resource
 import com.jing.sakura.extend.dpToPixels
 import com.jing.sakura.extend.secondsToMinuteAndSecondText
+import com.jing.sakura.extend.showLongToast
 import com.jing.sakura.extend.showShortToast
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -30,6 +33,7 @@ class AnimePlayerFragment : VideoSupportFragment() {
 
     private var glue: ProgressTransportControlGlue<LeanbackPlayerAdapter>? = null
 
+    private lateinit var mProgressBarManager: ProgressBarManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,6 +50,10 @@ class AnimePlayerFragment : VideoSupportFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         view.background = Color.BLACK.toDrawable()
+        mProgressBarManager = ProgressBarManager()
+        mProgressBarManager.setRootView(view as ViewGroup)
+        mProgressBarManager.enableProgressBar()
+        progressBarManager.initialDelay = 0L
         super.onViewCreated(view, savedInstanceState)
         lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -60,6 +68,7 @@ class AnimePlayerFragment : VideoSupportFragment() {
                 viewModel.videoUrl.collectLatest { urlAndTime ->
                     when (urlAndTime) {
                         is Resource.Success -> {
+                            mProgressBarManager.hide()
                             MediaItem.fromUri(urlAndTime.data.videoUrl).let {
                                 exoplayer?.setMediaItem(it)
                                 if (urlAndTime.data.lastPlayPosition > 0) {
@@ -77,7 +86,14 @@ class AnimePlayerFragment : VideoSupportFragment() {
                             }
                         }
 
-                        else -> {}
+                        is Resource.Loading -> {
+                            mProgressBarManager.show()
+                        }
+
+                        is Resource.Error -> {
+                            requireContext().showLongToast("加载视频链接错误: ${urlAndTime.message}")
+                            mProgressBarManager.hide()
+                        }
                     }
                 }
             }
