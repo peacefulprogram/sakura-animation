@@ -9,7 +9,6 @@ import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -61,7 +60,6 @@ import androidx.tv.foundation.lazy.grid.items
 import androidx.tv.foundation.lazy.list.TvLazyColumn
 import androidx.tv.foundation.lazy.list.TvLazyListState
 import androidx.tv.foundation.lazy.list.TvLazyRow
-import androidx.tv.foundation.lazy.list.items
 import androidx.tv.foundation.lazy.list.rememberTvLazyListState
 import androidx.tv.material3.Border
 import androidx.tv.material3.CardDefaults
@@ -200,6 +198,7 @@ fun DetailScreen(viewModel: DetailPageViewModel) {
     )
 }
 
+@OptIn(ExperimentalTvFoundationApi::class)
 @Composable
 fun RelativeVideoRow(videos: List<AnimeData>, sourceId: String) {
     if (videos.isEmpty()) {
@@ -209,20 +208,28 @@ fun RelativeVideoRow(videos: List<AnimeData>, sourceId: String) {
     Column {
         Text(text = stringResource(id = R.string.related_videos))
         Spacer(modifier = Modifier.height(5.dp))
-        TvLazyRow(
-            content = {
-                items(items = videos, key = { it.url }) { video ->
-                    VideoCard(
-                        modifier = Modifier.size(
-                            dimensionResource(id = R.dimen.poster_width),
-                            dimensionResource(id = R.dimen.poster_height)
-                        ), imageUrl = video.imageUrl, title = video.title
-                    ) {
-                        DetailActivity.startActivity(context, video.id, sourceId)
+        FocusGroup {
+            TvLazyRow(
+                content = {
+                    items(count = videos.size, key = { videos[it].id }) { videoIndex ->
+                        val video = videos[videoIndex]
+                        VideoCard(
+                            modifier = Modifier.size(
+                                dimensionResource(id = R.dimen.poster_width),
+                                dimensionResource(id = R.dimen.poster_height)
+                            ).run {
+                                if (videoIndex == 0) initiallyFocused() else restorableFocus()
+                            },
+                            imageUrl = video.imageUrl,
+                            title = video.title
+                        ) {
+                            DetailActivity.startActivity(context, video.id, sourceId)
+                        }
                     }
-                }
-            }, contentPadding = PaddingValues(horizontal = 10.dp, vertical = 15.dp)
-        )
+                },
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 15.dp)
+            )
+        }
     }
 }
 
@@ -323,15 +330,17 @@ fun VideoInfoRow(videoDetail: AnimeDetailPageData, viewModel: DetailPageViewMode
             }
 
             ProvideTextStyle(value = MaterialTheme.typography.bodySmall) {
-                TvLazyVerticalGrid(columns = TvGridCells.Fixed(2),
-                    verticalArrangement = spacedBy(6.dp),
-                    horizontalArrangement = spacedBy(6.dp),
+                TvLazyVerticalGrid(
+                    columns = TvGridCells.Fixed(2),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     content = {
                         items(items = videoDetail.infoList) { info ->
                             Text(text = info)
                         }
                         item(span = { TvGridItemSpan(maxLineSpan) }) {
                             Surface(
+                                modifier = Modifier.padding(2.dp),
                                 onClick = { showDescDialog = true },
                                 scale = ClickableSurfaceScale.None,
                                 colors = ClickableSurfaceDefaults.colors(

@@ -27,7 +27,7 @@ class MxdmSource(private val okHttpClient: OkHttpClient) : AnimationSource {
     override val name: String
         get() = "MX动漫"
 
-    override fun fetchHomePageData(): HomePageData {
+    override suspend fun fetchHomePageData(): HomePageData {
         val document = getDocument(BASE_URL)
         val contents = document.select(".content .module .module-list>.module-items").iterator()
         val titles = document.select(".content .module .module-title").iterator()
@@ -46,7 +46,6 @@ class MxdmSource(private val okHttpClient: OkHttpClient) : AnimationSource {
             seriesList.add(NamedValue(titleEl.text().trim(), value = videoList))
         }
         return HomePageData(
-            timeLineList = emptyList(),
             seriesList = seriesList
         )
     }
@@ -81,7 +80,7 @@ class MxdmSource(private val okHttpClient: OkHttpClient) : AnimationSource {
         )
     }
 
-    override fun fetchDetailPage(animeId: String): AnimeDetailPageData {
+    override suspend fun fetchDetailPage(animeId: String): AnimeDetailPageData {
         val document = getDocument("/dongman/$animeId.html")
         val videoTitle = document.selectFirst(".page-title")!!.text().trim()
         val tags = document.select(".video-info-aux a").joinToString(" | ") { it.text().trim() }
@@ -114,8 +113,6 @@ class MxdmSource(private val okHttpClient: OkHttpClient) : AnimationSource {
                             val epUrl = el.absUrl("href")
                             AnimePlayListEpisode(
                                 episode = el.text().trim(),
-                                url = epUrl,
-                                episodeIndex = epIndex,
                                 episodeId = epUrl.substring(
                                     epUrl.lastIndexOf('/') + 1,
                                     epUrl.lastIndexOf('.')
@@ -139,7 +136,7 @@ class MxdmSource(private val okHttpClient: OkHttpClient) : AnimationSource {
         )
     }
 
-    override fun searchAnimation(keyword: String, page: Int): SearchPageData {
+    override suspend fun searchAnimation(keyword: String, page: Int): SearchPageData {
         val document = getDocument("/search/${encodeUrlComponent(keyword)}----------$page---.html")
         val videos = document.select(".module-search-item").map { videoElement ->
             val link = videoElement.selectFirst("a")!!
@@ -170,7 +167,7 @@ class MxdmSource(private val okHttpClient: OkHttpClient) : AnimationSource {
     private fun encodeUrlComponent(text: String): String =
         URLEncoder.encode(text, Charsets.UTF_8.name())
 
-    override fun fetchVideoUrl(episodeId: String): Resource<String> {
+    override suspend fun fetchVideoUrl(episodeId: String): Resource<String> {
         val html = getHtml("/dongmanplay/$episodeId.html")
 
         val newHtml =
@@ -231,7 +228,7 @@ class MxdmSource(private val okHttpClient: OkHttpClient) : AnimationSource {
         )["url"] ?: throw RuntimeException("未获取到播放信息")
     }
 
-    override fun fetchUpdateTimeline(): UpdateTimeLine {
+    override suspend fun fetchUpdateTimeline(): UpdateTimeLine {
         val document = getDocument(BASE_URL)
         val tabs = document.selectFirst(".mxoneweek-tabs") ?: return UpdateTimeLine(
             current = -1,

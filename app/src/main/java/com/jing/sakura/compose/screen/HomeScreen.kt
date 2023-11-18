@@ -80,15 +80,24 @@ fun HomeScreen(viewModel: HomeViewModel) {
     var showChangeSourceDialog by remember {
         mutableStateOf(false)
     }
-    val buttons = remember {
+    val currentSource = viewModel.currentSource.collectAsState().value
+    val buttons = remember(viewModel.currentSource) {
         listOf(
-            HomeScreenButton(icon = R.drawable.search_icon, backgroundColor = R.color.green400) {
+            HomeScreenButton(
+                icon = R.drawable.search_icon,
+                backgroundColor = R.color.green400,
+                display = currentSource.supportSearch()
+            ) {
                 SearchActivity.startActivity(context, viewModel.currentSourceId)
             },
             HomeScreenButton(icon = R.drawable.history_icon, backgroundColor = R.color.yellow500) {
                 HistoryActivity.startActivity(context)
             },
-            HomeScreenButton(icon = R.drawable.timeline_icon, backgroundColor = R.color.cyan500) {
+            HomeScreenButton(
+                icon = R.drawable.timeline_icon,
+                backgroundColor = R.color.cyan500,
+                display = currentSource.supportTimeline()
+            ) {
                 UpdateTimelineActivity.startActivity(context, viewModel.currentSourceId)
             },
             HomeScreenButton(icon = R.drawable.switch_icon, backgroundColor = R.color.blue400) {
@@ -125,7 +134,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
                     Spacer(modifier = Modifier.height(10.dp))
                 }
                 val displayData: HomePageData? =
-                    if (homePageDataResource is Resource.Success) homePageDataResource.data else viewModel.lastHomePageData
+                    if (homePageDataResource is Resource.Error) null else if (homePageDataResource is Resource.Success) homePageDataResource.data else viewModel.lastHomePageData
                 if (displayData != null) {
                     val seriesList = displayData.seriesList
                     items(
@@ -291,6 +300,7 @@ fun HomeTitleRow(
         FocusGroup {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 buttonList.forEachIndexed { btnIndex, btn ->
+                    if (!btn.display) return@forEachIndexed
                     val bgColor = colorResource(id = btn.backgroundColor)
                     Button(
                         onClick = btn.onClick,
@@ -403,7 +413,8 @@ data class HomeScreenButton(
     @ColorRes
     val tint: Int = R.color.gray100,
     val label: String = "",
-    val onClick: () -> Unit = {}
+    val display: Boolean = true,
+    val onClick: () -> Unit = {},
 )
 
 @Preview

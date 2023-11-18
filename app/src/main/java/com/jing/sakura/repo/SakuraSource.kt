@@ -26,7 +26,7 @@ class SakuraSource(private val okHttpClient: OkHttpClient) : AnimationSource {
     private fun String.extractId() =
         this.substring(this.lastIndexOf('/') + 1, this.lastIndexOf('.'))
 
-    override fun fetchHomePageData(): HomePageData {
+    override suspend fun fetchHomePageData(): HomePageData {
         val document = fetchDocument(SAKURA_URL)!!
         val seriesTitleEls = document.select(".firs.l .dtit h2")
         val seriesAnimeEls = document.select(".firs.l .img")
@@ -60,11 +60,11 @@ class SakuraSource(private val okHttpClient: OkHttpClient) : AnimationSource {
             seriesList.add(NamedValue(title, seriesData))
         }
         return HomePageData(
-            timeLineList = emptyList(), seriesList = seriesList
+            seriesList = seriesList
         )
     }
 
-    override fun fetchDetailPage(animeId: String): AnimeDetailPageData {
+    override suspend fun fetchDetailPage(animeId: String): AnimeDetailPageData {
         val url = "$SAKURA_URL/show/$animeId.html"
         val document = fetchDocument(url)!!
         val animeName = document.select("div.rate.r > h1").text()
@@ -94,8 +94,6 @@ class SakuraSource(private val okHttpClient: OkHttpClient) : AnimationSource {
                         val epUrl = absUrl("href")
                         AnimePlayListEpisode(
                             episode = text(),
-                            url = epUrl,
-                            episodeIndex = episodeIndex,
                             episodeId = epUrl.substring(
                                 epUrl.lastIndexOf('/') + 1,
                                 epUrl.lastIndexOf('.')
@@ -129,19 +127,16 @@ class SakuraSource(private val okHttpClient: OkHttpClient) : AnimationSource {
         )
     }
 
-    override fun searchAnimation(keyword: String, page: Int): SearchPageData {
+    override suspend fun searchAnimation(keyword: String, page: Int): SearchPageData {
 
         var searchUrl = "${SAKURA_URL}/search/${keyword.encodeUrl()}/"
         if (page > 1) {
             searchUrl += "?page=${page}"
         }
         val document = fetchDocument(searchUrl)!!
-        var total: String? = null
         val noNextPage =
             document.select(".pages").takeIf { it.isNotEmpty() }?.let { it[0].children() }
                 ?.let { pages ->
-                    pages.select("#totalnum").takeIf { it.isNotEmpty() }
-                        ?.let { total = it[0].text() }
                     pages.indexOfFirst { it.tagName() == "span" } in arrayOf(
                         -1, pages.size - 2
                     )
@@ -173,7 +168,7 @@ class SakuraSource(private val okHttpClient: OkHttpClient) : AnimationSource {
         )
     }
 
-    override fun fetchVideoUrl(episodeId: String): Resource<String> {
+    override suspend fun fetchVideoUrl(episodeId: String): Resource<String> {
         return try {
             fetchDocument("$SAKURA_URL/v/$episodeId.html")?.select(".bofang > div")
                 ?.takeIf { it.size > 0 }?.first()
@@ -190,7 +185,7 @@ class SakuraSource(private val okHttpClient: OkHttpClient) : AnimationSource {
         }
     }
 
-    override fun fetchUpdateTimeline(): UpdateTimeLine {
+    override suspend fun fetchUpdateTimeline(): UpdateTimeLine {
         val home = fetchDocument(SAKURA_URL) ?: throw RuntimeException("文档为空")
         val container =
             home.selectFirst(".side.r>.bg") ?: throw RuntimeException("未找到更新时间表")

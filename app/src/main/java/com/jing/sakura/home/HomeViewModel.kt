@@ -38,6 +38,7 @@ class HomeViewModel(
     val homePageData: StateFlow<Resource<HomePageData>>
         get() = _homePageData
 
+    @Volatile
     var lastHomePageData: HomePageData? = null
         private set
 
@@ -70,6 +71,7 @@ class HomeViewModel(
                     _homePageData.emit(Resource.Success(it))
                 }
             } catch (ex: Exception) {
+                lastHomePageData = null
                 Log.e("homepage", "请求数据失败", ex)
 
                 val message = "请求数据失败:" + ex.message

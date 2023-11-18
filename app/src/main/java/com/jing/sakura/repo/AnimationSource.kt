@@ -15,13 +15,17 @@ interface AnimationSource {
 
     val name: String
 
-    fun fetchHomePageData(): HomePageData
+    suspend fun fetchHomePageData(): HomePageData
 
-    fun fetchDetailPage(animeId: String): AnimeDetailPageData
+    suspend fun fetchDetailPage(animeId: String): AnimeDetailPageData
 
-    fun searchAnimation(keyword: String, page: Int): SearchPageData
+    suspend fun searchAnimation(keyword: String, page: Int): SearchPageData
 
-    fun fetchVideoUrl(episodeId: String): Resource<String>
+    suspend fun fetchVideoUrl(episodeId: String): Resource<String>
 
-    fun fetchUpdateTimeline(): UpdateTimeLine
+    suspend fun fetchUpdateTimeline(): UpdateTimeLine
+
+    fun supportTimeline(): Boolean = true
+
+    fun supportSearch(): Boolean = true
 }
