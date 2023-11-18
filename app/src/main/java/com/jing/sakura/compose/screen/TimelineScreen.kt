@@ -7,6 +7,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -75,8 +76,10 @@ fun TimeLine(data: UpdateTimeLine, sourceId: String) {
     val defaultFocusRequester = remember {
         FocusRequester()
     }
-    val rowState = rememberTvLazyListState()
-    TvLazyRow(state = rowState, content = {
+    val rowState = rememberTvLazyListState(data.current)
+    TvLazyRow(
+        state = rowState,
+        content = {
         items(count = data.timeline.size, key = { data.timeline[it].first }) { idx ->
             val timeline = data.timeline[idx]
             TimeLineColumn(
@@ -123,7 +126,8 @@ fun TimeLineColumn(
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center
             )
-            TvLazyColumn(content = {
+            TvLazyColumn(
+                content = {
                 items(count = animeList.size, key = { animeList[it].url }) { idx ->
                     val anime = animeList[idx]
                     AnimeName(
@@ -133,7 +137,9 @@ fun TimeLineColumn(
                             } else {
                                 restorableFocus()
                             }
-                        }, name = anime.title
+                                .padding(vertical = 2.dp)
+                        },
+                        name = anime.title
                     ) {
                         DetailActivity.startActivity(context, anime.id, sourceId)
                     }

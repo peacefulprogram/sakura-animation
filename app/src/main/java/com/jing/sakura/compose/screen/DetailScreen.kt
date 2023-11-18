@@ -88,7 +88,6 @@ import com.jing.sakura.detail.DetailPageViewModel
 import com.jing.sakura.extend.secondsToMinuteAndSecondText
 import com.jing.sakura.player.NavigateToPlayerArg
 import com.jing.sakura.player.PlaybackActivity
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalTvMaterial3Api::class)
@@ -130,18 +129,6 @@ fun DetailScreen(viewModel: DetailPageViewModel) {
             videoDetail.playLists
         }
     }
-    var lastPlayEpisodeId by remember {
-        mutableStateOf("")
-    }
-    LaunchedEffect(Unit) {
-        viewModel.latestProgress.collectLatest {
-            if (it is Resource.Success) {
-                if (lastPlayEpisodeId != it.data.episodeId) {
-                    lastPlayEpisodeId = it.data.episodeId
-                }
-            }
-        }
-    }
     TvLazyColumn(
         modifier = Modifier.fillMaxSize(), content = {
             item {
@@ -149,9 +136,13 @@ fun DetailScreen(viewModel: DetailPageViewModel) {
             }
             items(count = playlists.size, key = { playlists[it].name }) { playlistIndex ->
                 val playlist = playlists[playlistIndex]
-                val listState = rememberTvLazyListState()
-                PlayListRow(episodes = playlist.episodeList,
-                    lastPlayEpisodeId = lastPlayEpisodeId,
+                val initiallyFocusedIndex =
+                    if (playlistIndex == videoDetail.lastPlayEpisodePosition.first) videoDetail.lastPlayEpisodePosition.second else 0
+                val listState =
+                    rememberTvLazyListState(initialFirstVisibleItemIndex = initiallyFocusedIndex)
+                PlayListRow(
+                    episodes = playlist.episodeList,
+                    initiallyFocusedIndex = initiallyFocusedIndex,
                     listState = listState,
                     title = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -240,40 +231,32 @@ fun RelativeVideoRow(videos: List<AnimeData>, sourceId: String) {
 fun PlayListRow(
     episodes: List<AnimePlayListEpisode>,
     title: @Composable () -> Unit,
-    lastPlayEpisodeId: String = "",
-    listState: TvLazyListState = rememberTvLazyListState(),
+    initiallyFocusedIndex: Int = 0,
+    listState: TvLazyListState,
     onEpisodeClick: (Int, AnimePlayListEpisode) -> Unit,
 ) {
-    val lastEpisodeIndex = remember(episodes, lastPlayEpisodeId) {
-        if (lastPlayEpisodeId.isEmpty()) {
-            -1
-        } else {
-            episodes.indexOfFirst { it.episodeId == lastPlayEpisodeId }
-        }
-    }
     Column(modifier = Modifier.fillMaxWidth()) {
         title()
         Spacer(modifier = Modifier.height(5.dp))
         FocusGroup {
             TvLazyRow(
-                state = listState, content = {
+                state = listState,
+                content = {
                     items(count = episodes.size, key = { episodes[it].episodeId }) { epIndex ->
                         val ep = episodes[epIndex]
+                        val modifier =
+                            if (epIndex == initiallyFocusedIndex)
+                                Modifier.initiallyFocused()
+                            else Modifier.restorableFocus()
                         VideoTag(
-                            modifier = if (epIndex == lastEpisodeIndex || (epIndex == 0 && lastEpisodeIndex == -1)) Modifier.initiallyFocused(
-                                true
-                            ) else Modifier.restorableFocus(), tagName = ep.episode
+                            modifier = modifier.padding(horizontal = 2.dp),
+                            tagName = ep.episode
                         ) {
                             onEpisodeClick(epIndex, ep)
                         }
                     }
                 }, horizontalArrangement = Arrangement.spacedBy(5.dp)
             )
-        }
-    }
-    LaunchedEffect(lastPlayEpisodeId) {
-        if (lastEpisodeIndex != -1) {
-            listState.scrollToItem(lastEpisodeIndex)
         }
     }
 }
@@ -288,7 +271,6 @@ fun VideoInfoRow(videoDetail: AnimeDetailPageData, viewModel: DetailPageViewMode
     var showDescDialog by remember {
         mutableStateOf(false)
     }
-    val context = LocalContext.current
 
     Row(
         Modifier
@@ -296,7 +278,9 @@ fun VideoInfoRow(videoDetail: AnimeDetailPageData, viewModel: DetailPageViewMode
             .height(dimensionResource(id = R.dimen.poster_height) * 1.3f + 10.dp)
     ) {
         CompactCard(
-            onClick = {},
+            onClick = {
+                viewModel.loadData()
+            },
             image = {
                 AsyncImage(
                     model = videoDetail.imageUrl,
@@ -313,6 +297,7 @@ fun VideoInfoRow(videoDetail: AnimeDetailPageData, viewModel: DetailPageViewMode
                     dimensionResource(id = R.dimen.poster_width) * 1.3f,
                     dimensionResource(id = R.dimen.poster_height) * 1.3f
                 )
+                .padding(2.dp)
         )
         Spacer(modifier = Modifier.width(15.dp))
         Column(

@@ -38,6 +38,12 @@ class HomeViewModel(
     val homePageData: StateFlow<Resource<HomePageData>>
         get() = _homePageData
 
+    var lastHomePageData: HomePageData? = null
+        private set
+
+    init {
+        loadData(false)
+    }
 
     fun changeSource(newSourceId: String) {
         if (newSourceId == currentSourceId) {
@@ -53,6 +59,10 @@ class HomeViewModel(
     }
 
     fun loadData(silent: Boolean = false) {
+        val lastValue = _homePageData.value
+        if (lastValue is Resource.Success) {
+            lastHomePageData = lastValue.data
+        }
         viewModelScope.launch(Dispatchers.IO) {
             _homePageData.emit(Resource.Loading(silent = silent))
             try {

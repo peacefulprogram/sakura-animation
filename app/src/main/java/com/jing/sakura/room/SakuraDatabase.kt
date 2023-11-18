@@ -19,8 +19,8 @@ abstract class SakuraDatabase : RoomDatabase() {
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL(
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
                     """
                 create table if not exists `search_history` (
                     `keyword` text not null,
@@ -32,8 +32,8 @@ abstract class SakuraDatabase : RoomDatabase() {
             }
         }
         val MIGRATION_2_3 = object : Migration(2, 3) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL(
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
                     """
                     CREATE TABLE `video_history_temp` (
                     `episodeId` TEXT NOT NULL, 
@@ -49,7 +49,7 @@ abstract class SakuraDatabase : RoomDatabase() {
                     )
                 """.trimIndent()
                 )
-                database.execSQL(
+                db.execSQL(
                     """
                     insert into video_history_temp(`episodeId`,
                                                     `sourceId`,
@@ -72,8 +72,8 @@ abstract class SakuraDatabase : RoomDatabase() {
                     from video_history
                 """.trimIndent(), arrayOf(SakuraSource.SOURCE_ID)
                 )
-                database.execSQL("drop table video_history")
-                database.execSQL("alter table video_history_temp rename to video_history")
+                db.execSQL("drop table video_history")
+                db.execSQL("alter table video_history_temp rename to video_history")
             }
 
         }

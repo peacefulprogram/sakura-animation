@@ -18,6 +18,7 @@ import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.CompactCard
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme
@@ -31,7 +32,8 @@ fun VideoCard(
     imageUrl: String,
     title: String,
     subTitle: String = "",
-    sourceName:String = "",
+    sourceName: String = "",
+    focusScale: Float = 1.1f,
     onKeyEvent: ((KeyEvent) -> Boolean)? = null,
     onLongClick: (() -> Unit)? = null,
     onClick: () -> Unit = {},
@@ -39,52 +41,57 @@ fun VideoCard(
     var focused by remember {
         mutableStateOf(false)
     }
-    CompactCard(modifier = modifier.onFocusChanged {
-        focused = it.isFocused || it.hasFocus
-    }.run {
-        if (onKeyEvent != null) {
-            onPreviewKeyEvent(onKeyEvent)
-        } else {
-            this
-        }
-    }, onClick = onClick, onLongClick = onLongClick, image = {
-        AsyncImage(
-            model = imageUrl,
-            contentDescription = title,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
-    }, title = {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 10.dp, end = 10.dp, bottom = 10.dp)
-        ) {
-            if (sourceName.isNotEmpty()) {
-                Text(text = sourceName, maxLines = 1)
+    CompactCard(
+        modifier = modifier.onFocusChanged {
+            focused = it.isFocused || it.hasFocus
+        }.run {
+            if (onKeyEvent != null) {
+                onPreviewKeyEvent(onKeyEvent)
+            } else {
+                this
             }
-            Text(text = title, maxLines = 1, modifier = Modifier.run {
-                if (focused) {
-                    basicMarquee()
-                } else {
-                    this
+        },
+        onClick = onClick, onLongClick = onLongClick,
+        image = {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        },
+        scale = CardDefaults.scale(focusedScale = focusScale),
+        title = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 10.dp, end = 10.dp, bottom = 10.dp)
+            ) {
+                if (sourceName.isNotEmpty()) {
+                    Text(text = sourceName, maxLines = 1)
                 }
-            })
-            if (subTitle.isNotEmpty()) {
-                Text(text = subTitle,
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 1,
-                    modifier = Modifier.graphicsLayer { alpha = 0.7f }.run {
-                        if (focused) {
-                            basicMarquee()
-                        } else {
-                            this
-                        }
-                    })
+                Text(text = title, maxLines = 1, modifier = Modifier.run {
+                    if (focused) {
+                        basicMarquee()
+                    } else {
+                        this
+                    }
+                })
+                if (subTitle.isNotEmpty()) {
+                    Text(text = subTitle,
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 1,
+                        modifier = Modifier.graphicsLayer { alpha = 0.7f }.run {
+                            if (focused) {
+                                basicMarquee()
+                            } else {
+                                this
+                            }
+                        })
 
+                }
             }
         }
-    }
 
     )
 }

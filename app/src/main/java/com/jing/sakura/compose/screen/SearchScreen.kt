@@ -200,14 +200,12 @@ fun InputKeywordRow(onSearch: (String) -> Unit) {
 
     }
 
-    val sttState by speechToTextParser.state.collectAsState()
-    LaunchedEffect(sttState) {
-        if (!sttState.isSpeaking && sttState.text.isNotEmpty()) {
-            inputKeyword = sttState.text.trim()
-        }
+    val searchButtonFocusRequester = remember {
+        FocusRequester()
     }
+    val sttState by speechToTextParser.state.collectAsState()
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        AnimatedContent(targetState = sttState.isSpeaking) { isSpeaking ->
+        AnimatedContent(targetState = sttState.isSpeaking, label = "") { isSpeaking ->
             IconButton(
                 onClick = {
                     if (isSpeaking) {
@@ -252,12 +250,22 @@ fun InputKeywordRow(onSearch: (String) -> Unit) {
         IconButton(
             onClick = {
                 onSearch(inputKeyword.trim())
-            }, enabled = inputKeyword.isNotBlank()
+            },
+            enabled = inputKeyword.isNotBlank(),
+            modifier = Modifier.focusRequester(searchButtonFocusRequester)
         ) {
             Icon(imageVector = Icons.Default.Search, contentDescription = "search")
         }
     }
 
+    LaunchedEffect(sttState) {
+        if (!sttState.isSpeaking && sttState.text.isNotEmpty()) {
+            inputKeyword = sttState.text.trim()
+            if (inputKeyword.isNotBlank()) {
+                searchButtonFocusRequester.requestFocus()
+            }
+        }
+    }
     LaunchedEffect(sttState.isSpeaking) {
         speechFocusRequester.requestFocus()
     }
@@ -287,7 +295,7 @@ fun SearchHistoryColumn(
                     Keyword(text = history.keyword,
                         modifier = Modifier.run {
                             if (kwIndex == 0) {
-                                initiallyFocused(true)
+                                initiallyFocused()
                             } else {
                                 restorableFocus()
                             }

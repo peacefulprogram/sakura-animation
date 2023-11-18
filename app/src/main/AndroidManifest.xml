@@ -23,7 +23,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Sakuraanimation">
         <activity
-            android:name=".history.MainActivity"
+            android:name=".home.MainActivity"
             android:banner="@drawable/app_icon_your_company"
             android:exported="true"
             android:icon="@drawable/app_icon_your_company"

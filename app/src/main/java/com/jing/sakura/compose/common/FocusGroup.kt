@@ -110,9 +110,9 @@ class FocusGroupScope internal constructor(private val state: FocusGroupState) {
      */
     @SuppressLint("ComposableModifierFactory")
     @Composable
-    fun Modifier.initiallyFocused(overrideOld: Boolean = false): Modifier {
+    fun Modifier.initiallyFocused(): Modifier {
         val focusId = rememberSaveable { generateUniqueFocusableId() }
-        if (overrideOld || state.noRecordedState()) {
+        if (state.noRecordedState()) {
             state.recordFocusedItemHash(focusId)
         }
         return this.restorableFocus(focusId)
