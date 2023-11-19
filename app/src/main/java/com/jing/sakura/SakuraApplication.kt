@@ -9,6 +9,7 @@ import coil.ImageLoader
 import coil.ImageLoaderFactory
 import com.jing.sakura.detail.DetailPageViewModel
 import com.jing.sakura.history.HistoryViewModel
+import com.jing.sakura.home.CategoryViewModel
 import com.jing.sakura.home.HomeViewModel
 import com.jing.sakura.http.WebServerContext
 import com.jing.sakura.player.VideoPlayerViewModel
@@ -101,6 +102,7 @@ class SakuraApplication : Application(), ImageLoaderFactory {
         viewModel { holder -> TimelineViewModel(get(), holder.get()) }
         viewModelOf(::HistoryViewModel)
         viewModel { holder -> SearchResultViewModel(holder.get(), get(), holder.get()) }
+        viewModel { holder -> CategoryViewModel(get(), holder.get()) }
 
     }
 

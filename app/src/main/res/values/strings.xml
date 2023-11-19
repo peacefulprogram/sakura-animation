@@ -12,4 +12,9 @@
     <string name="button_delete_all">删除全部</string>
     <string name="button_delete">删除</string>
     <string name="choose_animation_source">选择动漫源</string>
+    <string name="button_search">搜索</string>
+    <string name="anime_update_timeline">更新时间表</string>
+    <string name="button_anime_category">视频分类</string>
+    <string name="button_change_anime_source">切换动漫源</string>
+    <string name="button_refresh">刷新</string>
 </resources>

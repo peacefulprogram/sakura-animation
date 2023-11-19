@@ -1,9 +1,10 @@
 package com.jing.sakura.repo
 
 import com.jing.sakura.data.AnimeDetailPageData
+import com.jing.sakura.data.AnimePageData
 import com.jing.sakura.data.HomePageData
+import com.jing.sakura.data.NamedValue
 import com.jing.sakura.data.Resource
-import com.jing.sakura.data.SearchPageData
 import com.jing.sakura.data.UpdateTimeLine
 import okhttp3.OkHttpClient
 
@@ -19,7 +20,7 @@ class WebPageRepository(
             QukanbaSource(okHttpClient)
         )
 
-    val animationSourceMap = animationSources.associateBy { it.sourceId }
+    private val animationSourceMap = animationSources.associateBy { it.sourceId }
 
     fun requireAnimationSource(sourceId: String): AnimationSource =
         animationSourceMap[sourceId] ?: throw RuntimeException("数据源不存在:$sourceId")
@@ -30,7 +31,7 @@ class WebPageRepository(
     suspend fun fetchDetailPage(animeId: String, sourceId: String): AnimeDetailPageData =
         requireAnimationSource(sourceId).fetchDetailPage(animeId)
 
-    suspend fun searchAnimation(keyword: String, page: Int, sourceId: String): SearchPageData =
+    suspend fun searchAnimation(keyword: String, page: Int, sourceId: String): AnimePageData =
         requireAnimationSource(sourceId).searchAnimation(keyword, page)
 
 
@@ -42,4 +43,15 @@ class WebPageRepository(
 
     suspend fun fetchUpdateTimeline(sourceId: String): UpdateTimeLine =
         requireAnimationSource(sourceId).fetchUpdateTimeline()
+
+
+    suspend fun getVideoCategories(sourceId: String): List<VideoCategoryGroup> =
+        requireAnimationSource(sourceId).getVideoCategories()
+
+    suspend fun queryByCategory(
+        categories: List<NamedValue<String>>,
+        page: Int,
+        sourceId: String
+    ): AnimePageData =
+        requireAnimationSource(sourceId).queryByCategory(categories = categories, page = page)
 }

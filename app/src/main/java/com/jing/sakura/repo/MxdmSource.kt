@@ -4,12 +4,12 @@ import android.util.Base64
 import com.google.gson.Gson
 import com.jing.sakura.data.AnimeData
 import com.jing.sakura.data.AnimeDetailPageData
+import com.jing.sakura.data.AnimePageData
 import com.jing.sakura.data.AnimePlayList
 import com.jing.sakura.data.AnimePlayListEpisode
 import com.jing.sakura.data.HomePageData
 import com.jing.sakura.data.NamedValue
 import com.jing.sakura.data.Resource
-import com.jing.sakura.data.SearchPageData
 import com.jing.sakura.data.UpdateTimeLine
 import com.jing.sakura.extend.getDocument
 import com.jing.sakura.extend.getHtml
@@ -136,7 +136,7 @@ class MxdmSource(private val okHttpClient: OkHttpClient) : AnimationSource {
         )
     }
 
-    override suspend fun searchAnimation(keyword: String, page: Int): SearchPageData {
+    override suspend fun searchAnimation(keyword: String, page: Int): AnimePageData {
         val document =
             okHttpClient.getDocument("$BASE_URL/search/${encodeUrlComponent(keyword)}----------$page---.html")
         val videos = document.select(".module-search-item").map { videoElement ->
@@ -157,7 +157,7 @@ class MxdmSource(private val okHttpClient: OkHttpClient) : AnimationSource {
                     ?.text()?.trim() ?: ""
             )
         }
-        return SearchPageData(
+        return AnimePageData(
             page = page,
             hasNextPage = hasNextPage(document),
             animeList = videos
@@ -282,6 +282,83 @@ class MxdmSource(private val okHttpClient: OkHttpClient) : AnimationSource {
             img = imageElement.attr("src")
         }
         return img
+    }
+
+    override fun supportSearchByCategory(): Boolean = true
+
+    override suspend fun getVideoCategories(): List<VideoCategoryGroup> {
+        val document = okHttpClient.getDocument("$BASE_URL/type/riman.html")
+        val ignoreValue = "riman"
+        val groups = document.select("#main .box .library-box.scroll-box").run { slice(1..<size) }
+            .map { rowEl ->
+                val name =
+                    rowEl.selectFirst(".scroll-content > a")?.text()
+                        ?.trim()
+                        ?.removePrefix("全部")
+                val categories = mutableListOf<VideoCategory>()
+                if (name != null) {
+                    categories.add(VideoCategory(label = "全部", value = ""))
+                }
+                var defaultValue = ""
+                var valueIndex = -1
+                for (element in rowEl.select(".library-list .library-item")) {
+                    val parts = element.attr("href").run {
+                        substring(lastIndexOf('/') + 1, lastIndexOf('.'))
+                    }.split('-')
+                    if (valueIndex < 0) {
+                        valueIndex = parts.indexOfFirst { it.isNotBlank() && it != ignoreValue }
+                    }
+                    val value = parts[valueIndex]
+                    categories.add(
+                        VideoCategory(
+                            label = element.text().trim(),
+                            value = value
+                        )
+                    )
+                    if (element.hasClass("selected")) {
+                        defaultValue = value
+                    }
+                }
+                VideoCategoryGroup(
+                    name = name ?: "排序",
+                    key = valueIndex.toString(),
+                    defaultValue = defaultValue,
+                    categories = categories
+                )
+            }
+        return listOf(
+            VideoCategoryGroup(
+                name = "分类",
+                key = "0",
+                defaultValue = "riman",
+                categories = listOf(
+                    VideoCategory(label = "日漫", value = "riman"),
+                    VideoCategory(label = "国漫", value = "guoman"),
+                    VideoCategory(label = "动漫电影", value = "dmdianying"),
+                    VideoCategory(label = "欧美动漫", value = "oman")
+                )
+            )
+        ) + groups
+    }
+
+    override suspend fun queryByCategory(
+        categories: List<NamedValue<String>>,
+        page: Int
+    ): AnimePageData {
+        val queryParams = MutableList(12) { "" }
+        categories.forEach {
+            queryParams[it.name.toInt()] = it.value
+        }
+        queryParams[8] = page.toString()
+        val document =
+            okHttpClient.getDocument("$BASE_URL/show/${queryParams.joinToString("-")}.html")
+        val videos =
+            document.select(".module-list > .module-items > .module-item").map { it.parseToAnime() }
+        return AnimePageData(
+            page = page,
+            hasNextPage = hasNextPage(document = document),
+            animeList = videos
+        )
     }
 
     companion object {

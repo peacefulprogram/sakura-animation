@@ -2,12 +2,12 @@ package com.jing.sakura.repo
 
 import com.jing.sakura.data.AnimeData
 import com.jing.sakura.data.AnimeDetailPageData
+import com.jing.sakura.data.AnimePageData
 import com.jing.sakura.data.AnimePlayList
 import com.jing.sakura.data.AnimePlayListEpisode
 import com.jing.sakura.data.HomePageData
 import com.jing.sakura.data.NamedValue
 import com.jing.sakura.data.Resource
-import com.jing.sakura.data.SearchPageData
 import com.jing.sakura.data.UpdateTimeLine
 import com.jing.sakura.extend.encodeUrl
 import com.jing.sakura.extend.getDocument
@@ -125,7 +125,7 @@ class SakuraSource(private val okHttpClient: OkHttpClient) : AnimationSource {
         )
     }
 
-    override suspend fun searchAnimation(keyword: String, page: Int): SearchPageData {
+    override suspend fun searchAnimation(keyword: String, page: Int): AnimePageData {
 
         var searchUrl = "${SAKURA_URL}/search/${keyword.encodeUrl()}/"
         if (page > 1) {
@@ -159,7 +159,7 @@ class SakuraSource(private val okHttpClient: OkHttpClient) : AnimationSource {
             )
         }
 
-        return SearchPageData(
+        return AnimePageData(
             page = page,
             hasNextPage = !noNextPage,
             animeList = animeList

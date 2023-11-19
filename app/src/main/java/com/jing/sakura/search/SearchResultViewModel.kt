@@ -16,11 +16,9 @@ class SearchResultViewModel(
     val pager = Pager(
         PagingConfig(20),
         pagingSourceFactory = {
-            AnimeDataPagingSource(
-                keyword,
-                webPageRepository,
-                sourceId = sourceId
-            )
+            AnimeDataPagingSource {
+                webPageRepository.searchAnimation(keyword, it, sourceId)
+            }
         }
     ).flow.cachedIn(viewModelScope)
 

@@ -4,15 +4,13 @@ import android.util.Log
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.jing.sakura.data.AnimeData
-import com.jing.sakura.repo.WebPageRepository
+import com.jing.sakura.data.AnimePageData
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class AnimeDataPagingSource(
-    private val keyword: String,
-    private val webPageRepository: WebPageRepository,
-    val sourceId:String
+    private val dataProvider: suspend (page: Int) -> AnimePageData
 ) : PagingSource<Int, AnimeData>() {
     override fun getRefreshKey(state: PagingState<Int, AnimeData>): Int? {
         return null
@@ -23,7 +21,7 @@ class AnimeDataPagingSource(
         val prevKey = if (page > 1) page - 1 else null
         return try {
             val data = withContext(Dispatchers.IO){
-                webPageRepository.searchAnimation(keyword, page, sourceId = sourceId)
+                dataProvider.invoke(page)
             }
             val nextKey = if (data.hasNextPage) page + 1 else null
             LoadResult.Page(data.animeList, prevKey, nextKey)

@@ -3,12 +3,12 @@ package com.jing.sakura.repo
 import android.util.Base64
 import com.jing.sakura.data.AnimeData
 import com.jing.sakura.data.AnimeDetailPageData
+import com.jing.sakura.data.AnimePageData
 import com.jing.sakura.data.AnimePlayList
 import com.jing.sakura.data.AnimePlayListEpisode
 import com.jing.sakura.data.HomePageData
 import com.jing.sakura.data.NamedValue
 import com.jing.sakura.data.Resource
-import com.jing.sakura.data.SearchPageData
 import com.jing.sakura.data.UpdateTimeLine
 import com.jing.sakura.extend.encodeUrl
 import com.jing.sakura.extend.getDocument
@@ -143,7 +143,7 @@ class QukanbaSource(private val okHttpClient: OkHttpClient) : AnimationSource {
         )
     }
 
-    override suspend fun searchAnimation(keyword: String, page: Int): SearchPageData {
+    override suspend fun searchAnimation(keyword: String, page: Int): AnimePageData {
         val document =
             okHttpClient.getDocument(toAbsolute("/index.php/vod/search/page/$page/wd/${keyword.encodeUrl()}.html"))
         val videos = document.getElementsByClass("fed-deta-info").map { it.parseAnime() }
@@ -156,7 +156,7 @@ class QukanbaSource(private val okHttpClient: OkHttpClient) : AnimationSource {
                     }?.hasClass("fed-btns-disad") ?: true
                 !nextPageDisabled
             } ?: false
-        return SearchPageData(page = page, hasNextPage = hasNextPage, animeList = videos)
+        return AnimePageData(page = page, hasNextPage = hasNextPage, animeList = videos)
     }
 
     override suspend fun fetchVideoUrl(episodeId: String): Resource<AnimationSource.VideoUrlResult> {

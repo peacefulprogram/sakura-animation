@@ -5,12 +5,12 @@ import android.util.Log
 import com.google.gson.Gson
 import com.jing.sakura.data.AnimeData
 import com.jing.sakura.data.AnimeDetailPageData
+import com.jing.sakura.data.AnimePageData
 import com.jing.sakura.data.AnimePlayList
 import com.jing.sakura.data.AnimePlayListEpisode
 import com.jing.sakura.data.HomePageData
 import com.jing.sakura.data.NamedValue
 import com.jing.sakura.data.Resource
-import com.jing.sakura.data.SearchPageData
 import com.jing.sakura.data.UpdateTimeLine
 import com.jing.sakura.extend.encodeUrl
 import com.jing.sakura.extend.getDocument
@@ -111,7 +111,7 @@ class WedmSource(
         )
     }
 
-    override suspend fun searchAnimation(keyword: String, page: Int): SearchPageData {
+    override suspend fun searchAnimation(keyword: String, page: Int): AnimePageData {
         val document =
             okHttpClient.getDocument(toAbsolute("/search/${keyword.encodeUrl()}----------$page---.html"))
         val videos = document.getElementById("searchList")?.children()?.map { it.parseAnime() }
@@ -123,7 +123,7 @@ class WedmSource(
             ?.run {
                 indexOfLast { it.hasClass("btn-warm") } < size - 3
             } ?: false
-        return SearchPageData(page = page, hasNextPage = haveNextPage, animeList = videos)
+        return AnimePageData(page = page, hasNextPage = haveNextPage, animeList = videos)
     }
 
     override suspend fun fetchVideoUrl(episodeId: String): Resource<AnimationSource.VideoUrlResult> {

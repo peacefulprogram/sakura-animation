@@ -1,7 +1,7 @@
 package com.jing.sakura.compose.screen
 
 import androidx.annotation.ColorRes
-import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
@@ -19,6 +19,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.ChangeCircle
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,6 +44,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -43,9 +52,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -59,11 +66,11 @@ import androidx.tv.material3.ButtonDefaults
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme
 import com.jing.sakura.R
+import com.jing.sakura.category.AnimeCategoryActivity
 import com.jing.sakura.compose.common.ErrorTip
 import com.jing.sakura.compose.common.FocusGroup
 import com.jing.sakura.compose.common.Loading
 import com.jing.sakura.compose.common.VideoCard
-import com.jing.sakura.compose.theme.SakuraTheme
 import com.jing.sakura.data.AnimeData
 import com.jing.sakura.data.HomePageData
 import com.jing.sakura.data.Resource
@@ -83,27 +90,50 @@ fun HomeScreen(viewModel: HomeViewModel) {
     val currentSource = viewModel.currentSource.collectAsState().value
     val buttons = remember(currentSource) {
         listOf(
+
             HomeScreenButton(
-                icon = R.drawable.search_icon,
+                icon = Icons.Default.Search,
                 backgroundColor = R.color.green400,
-                display = currentSource.supportSearch()
+                display = currentSource.supportSearch(),
+                label = R.string.button_search
             ) {
                 SearchActivity.startActivity(context, viewModel.currentSourceId)
             },
-            HomeScreenButton(icon = R.drawable.history_icon, backgroundColor = R.color.yellow500) {
+            HomeScreenButton(
+                icon = Icons.Default.History,
+                backgroundColor = R.color.yellow500,
+                label = R.string.playback_history
+            ) {
                 HistoryActivity.startActivity(context)
             },
             HomeScreenButton(
-                icon = R.drawable.timeline_icon,
+                icon = Icons.Default.CalendarMonth,
                 backgroundColor = R.color.cyan500,
-                display = currentSource.supportTimeline()
+                display = currentSource.supportTimeline(),
+                label = R.string.anime_update_timeline
             ) {
                 UpdateTimelineActivity.startActivity(context, viewModel.currentSourceId)
             },
-            HomeScreenButton(icon = R.drawable.switch_icon, backgroundColor = R.color.blue400) {
+            HomeScreenButton(
+                icon = Icons.Default.Category,
+                backgroundColor = R.color.lime600,
+                display = currentSource.supportSearchByCategory(),
+                label = R.string.button_anime_category
+            ) {
+                AnimeCategoryActivity.startActivity(context, viewModel.currentSourceId)
+            },
+            HomeScreenButton(
+                icon = Icons.Default.ChangeCircle,
+                backgroundColor = R.color.blue400,
+                label = R.string.button_change_anime_source
+            ) {
                 showChangeSourceDialog = true
             },
-            HomeScreenButton(icon = R.drawable.refresh_icon, backgroundColor = R.color.sky400) {
+            HomeScreenButton(
+                icon = Icons.Default.Refresh,
+                backgroundColor = R.color.sky400,
+                label = R.string.button_refresh
+            ) {
                 viewModel.loadData(false)
             },
         )
@@ -179,7 +209,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
         )
 
         if (homePageDataResource is Resource.Loading && !homePageDataResource.silent) {
-            Loading()
+            Loading(text = "")
         }
         if (homePageDataResource is Resource.Error) {
             ErrorTip(message = homePageDataResource.message) {
@@ -280,7 +310,10 @@ fun SourceItem(
 
 }
 
-@OptIn(ExperimentalTvMaterial3Api::class, ExperimentalTvFoundationApi::class)
+@OptIn(
+    ExperimentalTvMaterial3Api::class, ExperimentalTvFoundationApi::class,
+    ExperimentalMaterial3Api::class
+)
 @Composable
 fun HomeTitleRow(
     modifier: Modifier = Modifier,
@@ -290,6 +323,10 @@ fun HomeTitleRow(
     iconFocusedScale: Float = 1.1f
 ) {
     val iconPadding = iconSize / 4
+    val displayButtons = remember(buttonList) {
+        buttonList.filter { it.display }
+    }
+    val coroutineScope = rememberCoroutineScope()
     Row(
         horizontalArrangement = Arrangement.SpaceBetween,
         modifier = modifier
@@ -298,31 +335,41 @@ fun HomeTitleRow(
         verticalAlignment = Alignment.Top
     ) {
         FocusGroup {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                buttonList.forEachIndexed { btnIndex, btn ->
-                    if (!btn.display) return@forEachIndexed
-                    val bgColor = colorResource(id = btn.backgroundColor)
-                    Button(
-                        onClick = btn.onClick,
-                        shape = ButtonDefaults.shape(shape = CircleShape),
-                        scale = ButtonDefaults.scale(focusedScale = iconFocusedScale),
-                        colors = ButtonDefaults.colors(
-                            containerColor = bgColor,
-                            focusedContainerColor = bgColor
-                        ),
-                        modifier = Modifier.size(iconSize).run {
-                            if (btnIndex == 0) initiallyFocused() else restorableFocus()
-                        },
-                        contentPadding = PaddingValues(iconPadding)
-                    ) {
-                        Icon(
-                            painter = painterResource(id = btn.icon),
-                            contentDescription = btn.label,
-                            tint = colorResource(id = btn.tint)
-                        )
+            TvLazyRow(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(horizontal = iconSize / 2 * (iconFocusedScale - 1f)),
+                content = {
+                    items(
+                        count = displayButtons.size,
+                        key = { displayButtons[it].label }
+                    ) { btnIndex ->
+                        val btn = displayButtons[btnIndex]
+                        val bgColor = colorResource(id = btn.backgroundColor)
+                        val label = stringResource(id = btn.label)
+                        Button(
+                            onClick = btn.onClick,
+                            shape = ButtonDefaults.shape(shape = CircleShape),
+                            scale = ButtonDefaults.scale(focusedScale = iconFocusedScale),
+                            colors = ButtonDefaults.colors(
+                                containerColor = bgColor,
+                                focusedContainerColor = bgColor
+                            ),
+                            modifier = Modifier
+                                .size(iconSize)
+                                .run {
+                                    if (btnIndex == 0) initiallyFocused() else restorableFocus()
+                                },
+                            contentPadding = PaddingValues(iconPadding)
+                        ) {
+                            Icon(
+                                imageVector = btn.icon,
+                                contentDescription = label,
+                                tint = colorResource(id = btn.tint)
+                            )
+                        }
                     }
                 }
-            }
+            )
 
         }
         Text(
@@ -357,48 +404,44 @@ fun AnimationRow(
                 Text(text = title, style = MaterialTheme.typography.titleLarge)
             }
             Spacer(modifier = Modifier.height(10.dp))
-            TvLazyRow(content = {
-                item {
-                    Spacer(modifier = Modifier.width(edgeBlankWidth))
-                }
-                items(count = videos.size, key = { videos[it].id }) { videoIndex ->
-                    val video = videos[videoIndex]
-                    VideoCard(
-                        modifier = Modifier.size(width = width, height = height)
-                            .run {
-                                if (videoIndex == 0) {
-                                    initiallyFocused()
+            TvLazyRow(
+                contentPadding = PaddingValues(horizontal = edgeBlankWidth),
+                content = {
+                    items(count = videos.size, key = { videos[it].id }) { videoIndex ->
+                        val video = videos[videoIndex]
+                        VideoCard(
+                            modifier = Modifier.size(width = width, height = height)
+                                .run {
+                                    if (videoIndex == 0) {
+                                        initiallyFocused()
+                                    } else {
+                                        restorableFocus()
+                                    }
+                                },
+                            focusScale = focusScale,
+                            imageUrl = video.imageUrl,
+                            title = video.title,
+                            subTitle = video.currentEpisode,
+                            onKeyEvent = { keyEvent ->
+                                if (keyEvent.key == Key.Menu) {
+                                    if (keyEvent.type == KeyEventType.KeyDown) {
+                                        onRequestRefresh()
+                                    }
+                                    true
+                                } else if (keyEvent.key == Key.DirectionLeft && videoIndex == 0) {
+                                    true
+                                } else if (keyEvent.key == Key.Back && keyEvent.type == KeyEventType.KeyUp) {
+                                    onBackPressed()
                                 } else {
-                                    restorableFocus()
+                                    false
                                 }
                             },
-                        focusScale = focusScale,
-                        imageUrl = video.imageUrl,
-                        title = video.title,
-                        subTitle = video.currentEpisode,
-                        onKeyEvent = { keyEvent ->
-                            if (keyEvent.key == Key.Menu) {
-                                if (keyEvent.type == KeyEventType.KeyDown) {
-                                    onRequestRefresh()
-                                }
-                                true
-                            } else if (keyEvent.key == Key.DirectionLeft && videoIndex == 0) {
-                                true
-                            } else if (keyEvent.key == Key.Back && keyEvent.type == KeyEventType.KeyUp) {
-                                onBackPressed()
-                            } else {
-                                false
+                            onClick = {
+                                onVideoClick(video)
                             }
-                        },
-                        onClick = {
-                            onVideoClick(video)
-                        }
-                    )
-                }
-                item {
-                    Spacer(modifier = Modifier.width(edgeBlankWidth))
-                }
-            })
+                        )
+                    }
+                })
             Spacer(modifier = Modifier.height(height * 0.05f))
         }
     }
@@ -406,37 +449,16 @@ fun AnimationRow(
 }
 
 data class HomeScreenButton(
-    @DrawableRes
-    val icon: Int,
+    val icon: ImageVector,
     @ColorRes
     val backgroundColor: Int,
     @ColorRes
     val tint: Int = R.color.gray100,
-    val label: String = "",
+    @StringRes
+    val label: Int,
     val display: Boolean = true,
     val onClick: () -> Unit = {},
 )
 
-@Preview
-@Composable
-fun HomeTitleRowPreview() {
-    SakuraTheme {
-        val buttons = remember {
-            listOf(
-                HomeScreenButton(icon = R.drawable.search_icon, backgroundColor = R.color.green400),
-                HomeScreenButton(
-                    icon = R.drawable.history_icon,
-                    backgroundColor = R.color.yellow500
-                ),
-                HomeScreenButton(
-                    icon = R.drawable.timeline_icon,
-                    backgroundColor = R.color.cyan500
-                ),
-                HomeScreenButton(icon = R.drawable.refresh_icon, backgroundColor = R.color.sky400),
-            )
-        }
-        HomeTitleRow(buttonList = buttons, title = "MX动漫")
-    }
-}
 
 

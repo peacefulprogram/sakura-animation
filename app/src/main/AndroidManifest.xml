@@ -58,6 +58,10 @@
         <activity
             android:name=".timeline.UpdateTimelineActivity"
             android:exported="false" />
+
+        <activity
+            android:name=".category.AnimeCategoryActivity"
+            android:exported="false"/>
     </application>
 
 </manifest>
