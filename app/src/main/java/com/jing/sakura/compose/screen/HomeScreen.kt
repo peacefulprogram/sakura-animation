@@ -81,7 +81,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
         mutableStateOf(false)
     }
     val currentSource = viewModel.currentSource.collectAsState().value
-    val buttons = remember(viewModel.currentSource) {
+    val buttons = remember(currentSource) {
         listOf(
             HomeScreenButton(
                 icon = R.drawable.search_icon,

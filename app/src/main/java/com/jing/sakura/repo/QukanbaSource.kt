@@ -65,7 +65,7 @@ class QukanbaSource(private val okHttpClient: OkHttpClient) : AnimationSource {
         val imageUrl = linkEl.dataset()["original"] ?: ""
         val episode = linkEl.selectFirst(".fed-list-remarks")?.text()?.trim() ?: ""
         val title = selectFirst(".fed-list-title")?.text()?.trim() // 首页和详情页推荐视频
-            ?: selectFirst("dd.fed-deta-conten .fed-part-eone")?.text()?.trim() // 搜索页逻辑
+            ?: selectFirst("dd.fed-deta-content .fed-part-eone")?.text()?.trim() // 搜索页逻辑
         return AnimeData(
             id = url.substring(url.lastIndexOf('/') + 1, url.lastIndexOf('.')),
             url = url,
@@ -152,7 +152,9 @@ class QukanbaSource(private val okHttpClient: OkHttpClient) : AnimationSource {
             ?.children()
             ?.run {
                 val nextPageDisabled =
-                    findLast { it.text().trim() == "下頁" }?.hasClass("fed-btns-disad") ?: true
+                    findLast {
+                        it.text().trim().run { this == "下頁" || this == "下页" }
+                    }?.hasClass("fed-btns-disad") ?: true
                 !nextPageDisabled
             } ?: false
         return SearchPageData(page = page, hasNextPage = hasNextPage, animeList = videos)

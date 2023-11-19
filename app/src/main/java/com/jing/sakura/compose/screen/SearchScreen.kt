@@ -293,13 +293,15 @@ fun SearchHistoryColumn(
                 items(pagingItems.itemCount, key = { pagingItems[it]?.keyword ?: it }) { kwIndex ->
                     val history = pagingItems[kwIndex] ?: return@items
                     Keyword(text = history.keyword,
-                        modifier = Modifier.run {
-                            if (kwIndex == 0) {
-                                initiallyFocused()
-                            } else {
-                                restorableFocus()
+                        modifier = Modifier
+                            .run {
+                                if (kwIndex == 0) {
+                                    initiallyFocused()
+                                } else {
+                                    restorableFocus()
+                                }
                             }
-                        },
+                            .padding(vertical = 1.dp),
                         onLongClick = {
                             confirmDeleteHistory = history
                         }) {

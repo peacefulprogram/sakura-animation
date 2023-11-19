@@ -87,7 +87,9 @@ fun SearchResultScreen(viewModel: SearchResultViewModel) {
         if (refreshState == LoadState.Loading) {
             Loading()
         } else if (refreshState is LoadState.Error) {
-            ErrorTip(message = refreshState.error.message ?: refreshState.error.toString())
+            ErrorTip(message = refreshState.error.message ?: refreshState.error.toString()) {
+                pagingItems.refresh()
+            }
         } else if (itemCount == 0) {
             Text(text = "什么都没有哦", style = MaterialTheme.typography.bodyLarge)
         }

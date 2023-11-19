@@ -1,5 +1,6 @@
 package com.jing.sakura.search
 
+import android.util.Log
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.jing.sakura.data.AnimeData
@@ -30,9 +31,13 @@ class AnimeDataPagingSource(
             if (ex is CancellationException) {
                 throw ex
             }
+            Log.e(TAG, "load: ${ex.message}", ex)
             LoadResult.Error(ex)
         }
 
     }
 
+    companion object {
+        private const val TAG = "AnimeDataPagingSource"
+    }
 }

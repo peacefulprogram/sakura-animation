@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
 import android.util.Log
-import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.room.Room
 import coil.ImageLoader
 import coil.ImageLoaderFactory
@@ -113,15 +112,6 @@ class SakuraApplication : Application(), ImageLoaderFactory {
                 })
             }
         }.build()
-    }
-
-    private fun provideOkhttpMedia3DataSourceFactory(): OkHttpDataSource.Factory {
-        val client = basicOkhttpClient()
-            .addInterceptor(HttpLoggingInterceptor().apply {
-                level = HttpLoggingInterceptor.Level.BASIC
-            })
-            .build()
-        return OkHttpDataSource.Factory { req -> client.newCall(req) }
     }
 
     private fun basicOkhttpClient(): OkHttpClient.Builder {
