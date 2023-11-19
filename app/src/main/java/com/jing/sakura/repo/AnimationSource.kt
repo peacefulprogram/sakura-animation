@@ -13,6 +13,8 @@ interface AnimationSource {
 
     val name: String
 
+    val pageSize: Int
+
     suspend fun fetchHomePageData(): HomePageData
 
     suspend fun fetchDetailPage(animeId: String): AnimeDetailPageData

@@ -25,6 +25,8 @@ class QukanbaSource(private val okHttpClient: OkHttpClient) : AnimationSource {
     override val name: String
         get() = "去看吧"
 
+    override val pageSize: Int
+        get() = 48
 
     override suspend fun fetchHomePageData(): HomePageData {
         val document = okHttpClient.getDocument(toAbsolute("/"))

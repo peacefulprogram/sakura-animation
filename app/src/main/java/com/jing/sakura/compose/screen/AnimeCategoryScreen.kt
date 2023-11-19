@@ -176,6 +176,7 @@ fun VideoGrid(
                             },
                             imageUrl = video.imageUrl,
                             title = video.title,
+                            subTitle = video.currentEpisode,
                             onClick = { onClick(video) },
                             onLongClick = { onLongClick(video) },
                             onKeyEvent = {

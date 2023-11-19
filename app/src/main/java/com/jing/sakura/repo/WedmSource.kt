@@ -17,6 +17,7 @@ import com.jing.sakura.extend.getHtml
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import okhttp3.OkHttpClient
+import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
@@ -34,6 +35,8 @@ class WedmSource(
         get() = "wedm"
     override val name: String
         get() = "WE动漫"
+    override val pageSize: Int
+        get() = 36
 
     override suspend fun fetchHomePageData(): HomePageData {
         val document = okHttpClient.getDocument(toAbsolute("/"))
@@ -117,15 +120,21 @@ class WedmSource(
             okHttpClient.getDocument(toAbsolute("/search/${keyword.encodeUrl()}----------$page---.html"))
         val videos = document.getElementById("searchList")?.children()?.map { it.parseAnime() }
             ?: emptyList()
-        val haveNextPage = document.selectFirst(".myui-page")?.getElementsByTag("a")
+        return AnimePageData(
+            page = page,
+            hasNextPage = hasNextPage(document = document),
+            animeList = videos
+        )
+    }
+
+    private fun hasNextPage(document: Document): Boolean =
+        document.selectFirst(".myui-page")?.getElementsByTag("a")
             ?.asSequence()
             ?.filter { it.attr("href").isNotBlank() }
             ?.toList()
             ?.run {
                 indexOfLast { it.hasClass("btn-warm") } < size - 3
             } ?: false
-        return AnimePageData(page = page, hasNextPage = haveNextPage, animeList = videos)
-    }
 
     override suspend fun fetchVideoUrl(episodeId: String): Resource<AnimationSource.VideoUrlResult> {
         val newHtml =
@@ -251,6 +260,70 @@ class WedmSource(
             }
         }
         return baseUrl!!
+    }
+
+    override fun supportSearchByCategory(): Boolean = true
+
+    override suspend fun getVideoCategories(): List<VideoCategoryGroup> {
+        val document = okHttpClient.getDocument(toAbsolute("/type/ribendongman.html"))
+        val elements =
+            document.select(".container .row .myui-panel_bd ul.myui-screen__list.nav-slide")
+        val ignoreKey = "ribendongman"
+        // 忽略第一个
+        val result = List(elements.size - 1) { elementIndex ->
+            val row = elements[elementIndex + 1]
+            val linkList = row.getElementsByTag("a")
+            val name = linkList[0].text().trim()
+            val valueIndex = linkList.last()!!.attr("href").run {
+                substring(lastIndexOf('/') + 1, lastIndexOf('.'))
+            }
+                .split('-')
+                .indexOfFirst { it.isNotEmpty() && it != ignoreKey }
+            // 忽略第一个
+            val categories = List(linkList.size - 1) {
+                val el = linkList[it + 1]
+                val value = el.attr("href").run {
+                    substring(lastIndexOf('/') + 1, lastIndexOf('.'))
+                }
+                    .split('-')[valueIndex]
+                VideoCategory(label = el.text().trim(), value = value)
+            }
+            VideoCategoryGroup(
+                name = name,
+                key = valueIndex.toString(),
+                defaultValue = categories[0].value,
+                categories = categories
+            )
+        }
+        val channel = VideoCategoryGroup(
+            name = "频道",
+            key = "0",
+            defaultValue = "ribendongman",
+            categories = listOf(
+                VideoCategory(label = "日漫", value = "ribendongman"),
+                VideoCategory(label = "国漫", value = "guochandongman"),
+                VideoCategory(label = "动漫电影", value = "dongmandianying"),
+                VideoCategory(label = "欧美动漫", value = "oumeidongman")
+            )
+        )
+        return listOf(channel) + result
+    }
+
+    override suspend fun queryByCategory(
+        categories: List<NamedValue<String>>,
+        page: Int
+    ): AnimePageData {
+        val params = MutableList(12) { "" }
+        params[8] = page.toString()
+        categories.forEach { params[it.name.toInt()] = it.value }
+        val document =
+            okHttpClient.getDocument(toAbsolute("/show/${params.joinToString("-")}.html"))
+        val videos = document.getElementsByClass("myui-vodlist__box").map { it.parseAnime() }
+        return AnimePageData(
+            page = page,
+            hasNextPage = hasNextPage(document = document),
+            animeList = videos
+        )
     }
 
     companion object {

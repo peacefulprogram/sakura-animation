@@ -21,6 +21,9 @@ class SakuraSource(private val okHttpClient: OkHttpClient) : AnimationSource {
     override val name: String
         get() = "樱花动漫"
 
+    override val pageSize: Int
+        get() = 15
+
     private fun String.extractId() =
         this.substring(this.lastIndexOf('/') + 1, this.lastIndexOf('.'))
 

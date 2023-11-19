@@ -68,7 +68,8 @@ fun SearchResultScreen(viewModel: SearchResultViewModel) {
                                 }
                             },
                             imageUrl = video.imageUrl,
-                            title = video.title
+                            title = video.title,
+                            subTitle = video.currentEpisode
                         ) {
                             DetailActivity.startActivity(context, video.id, viewModel.sourceId)
                         }

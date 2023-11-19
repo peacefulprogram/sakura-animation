@@ -14,7 +14,7 @@ class SearchResultViewModel(
 ) : ViewModel() {
 
     val pager = Pager(
-        PagingConfig(20),
+        PagingConfig(pageSize = webPageRepository.requireAnimationSource(sourceId).pageSize),
         pagingSourceFactory = {
             AnimeDataPagingSource {
                 webPageRepository.searchAnimation(keyword, it, sourceId)

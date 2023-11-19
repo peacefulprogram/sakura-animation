@@ -27,6 +27,9 @@ class MxdmSource(private val okHttpClient: OkHttpClient) : AnimationSource {
     override val name: String
         get() = "MX动漫"
 
+    override val pageSize: Int
+        get() = 72
+
     override suspend fun fetchHomePageData(): HomePageData {
         val document = okHttpClient.getDocument(BASE_URL)
         val contents = document.select(".content .module .module-list>.module-items").iterator()

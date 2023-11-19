@@ -46,7 +46,7 @@ class CategoryViewModel(
     }
 
     val pager = Pager(
-        config = PagingConfig(pageSize = 72)
+        config = PagingConfig(pageSize = webPageRepository.requireAnimationSource(sourceId).pageSize)
     ) {
         AnimeDataPagingSource {
             if (queryCategories.isEmpty()) {
@@ -89,8 +89,8 @@ class CategoryViewModel(
         val m2 = _userSelectedCategories.value
         val notSame = m1.entries.any { it.value != m2[it.key] }
         if (notSame) {
-            _selectedCategories.update { HashMap(m2) }
             this.queryCategories = m2.entries.map { NamedValue(name = it.key, value = it.value) }
+            _selectedCategories.update { HashMap(m2) }
             return true
         }
         return false
