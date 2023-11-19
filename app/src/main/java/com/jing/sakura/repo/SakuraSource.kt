@@ -10,10 +10,8 @@ import com.jing.sakura.data.Resource
 import com.jing.sakura.data.SearchPageData
 import com.jing.sakura.data.UpdateTimeLine
 import com.jing.sakura.extend.encodeUrl
+import com.jing.sakura.extend.getDocument
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import org.jsoup.Jsoup
-import org.jsoup.nodes.Document
 import java.util.Calendar
 import java.util.Date
 
@@ -27,7 +25,7 @@ class SakuraSource(private val okHttpClient: OkHttpClient) : AnimationSource {
         this.substring(this.lastIndexOf('/') + 1, this.lastIndexOf('.'))
 
     override suspend fun fetchHomePageData(): HomePageData {
-        val document = fetchDocument(SAKURA_URL)!!
+        val document = okHttpClient.getDocument(SAKURA_URL)
         val seriesTitleEls = document.select(".firs.l .dtit h2")
         val seriesAnimeEls = document.select(".firs.l .img")
         val seriesCount = seriesAnimeEls.size.coerceAtMost(seriesTitleEls.size)
@@ -66,7 +64,7 @@ class SakuraSource(private val okHttpClient: OkHttpClient) : AnimationSource {
 
     override suspend fun fetchDetailPage(animeId: String): AnimeDetailPageData {
         val url = "$SAKURA_URL/show/$animeId.html"
-        val document = fetchDocument(url)!!
+        val document = okHttpClient.getDocument(url)
         val animeName = document.select("div.rate.r > h1").text()
         val infoList = document.select("div.rate.r>.sinfo>span").map { it.text().trim() }
         val imageUrl = document.select(".thumb.l img")[0].absUrl("src")
@@ -133,7 +131,7 @@ class SakuraSource(private val okHttpClient: OkHttpClient) : AnimationSource {
         if (page > 1) {
             searchUrl += "?page=${page}"
         }
-        val document = fetchDocument(searchUrl)!!
+        val document = okHttpClient.getDocument(searchUrl)
         val noNextPage =
             document.select(".pages").takeIf { it.isNotEmpty() }?.let { it[0].children() }
                 ?.let { pages ->
@@ -168,10 +166,11 @@ class SakuraSource(private val okHttpClient: OkHttpClient) : AnimationSource {
         )
     }
 
-    override suspend fun fetchVideoUrl(episodeId: String): Resource<String> {
+    override suspend fun fetchVideoUrl(episodeId: String): Resource<AnimationSource.VideoUrlResult> {
         return try {
-            fetchDocument("$SAKURA_URL/v/$episodeId.html")?.select(".bofang > div")
-                ?.takeIf { it.size > 0 }?.first()
+            okHttpClient.getDocument("$SAKURA_URL/v/$episodeId.html").select(".bofang > div")
+                .takeIf { it.size > 0 }
+                ?.first()
                 ?.attr("data-vid")?.let {
                     val dollarIndex = it.lastIndexOf('$')
                     if (dollarIndex == -1) {
@@ -179,14 +178,15 @@ class SakuraSource(private val okHttpClient: OkHttpClient) : AnimationSource {
                     } else {
                         it.substring(0 until dollarIndex)
                     }
-                }?.let { Resource.Success(it) } ?: Resource.Error("加载视频链接失败")
+                }?.let { Resource.Success(AnimationSource.VideoUrlResult(it)) }
+                ?: Resource.Error("加载视频链接失败")
         } catch (e: Exception) {
             Resource.Error(e.message ?: "")
         }
     }
 
     override suspend fun fetchUpdateTimeline(): UpdateTimeLine {
-        val home = fetchDocument(SAKURA_URL) ?: throw RuntimeException("文档为空")
+        val home = okHttpClient.getDocument(SAKURA_URL)
         val container =
             home.selectFirst(".side.r>.bg") ?: throw RuntimeException("未找到更新时间表")
         val names = container.selectFirst(".tag")!!.children().mapIndexed() { index, el ->
@@ -215,15 +215,6 @@ class SakuraSource(private val okHttpClient: OkHttpClient) : AnimationSource {
             },
             timeline = timeline
         )
-    }
-
-    private fun fetchDocument(url: String): Document? {
-        return okHttpClient.newCall(Request.Builder().url(url).get().build())
-            .execute().body?.byteString()?.string(Charsets.UTF_8)?.run {
-                Jsoup.parse(this).apply {
-                    setBaseUri(url)
-                }
-            }
     }
 
     companion object {

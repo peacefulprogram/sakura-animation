@@ -12,7 +12,12 @@ class WebPageRepository(
 ) {
 
     val animationSources =
-        listOf(SakuraSource(okHttpClient), MxdmSource(okHttpClient), WedmSource(okHttpClient))
+        listOf(
+            SakuraSource(okHttpClient),
+            MxdmSource(okHttpClient),
+            WedmSource(okHttpClient),
+            QukanbaSource(okHttpClient)
+        )
 
     val animationSourceMap = animationSources.associateBy { it.sourceId }
 
@@ -29,7 +34,10 @@ class WebPageRepository(
         requireAnimationSource(sourceId).searchAnimation(keyword, page)
 
 
-    suspend fun fetchVideoUrl(episodeId: String, sourceId: String): Resource<String> =
+    suspend fun fetchVideoUrl(
+        episodeId: String,
+        sourceId: String
+    ): Resource<AnimationSource.VideoUrlResult> =
         requireAnimationSource(sourceId).fetchVideoUrl(episodeId)
 
     suspend fun fetchUpdateTimeline(sourceId: String): UpdateTimeLine =

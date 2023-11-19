@@ -13,12 +13,11 @@ import com.jing.sakura.data.Resource
 import com.jing.sakura.data.SearchPageData
 import com.jing.sakura.data.UpdateTimeLine
 import com.jing.sakura.extend.encodeUrl
+import com.jing.sakura.extend.getDocument
+import com.jing.sakura.extend.getHtml
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import org.jsoup.Jsoup
-import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
@@ -38,7 +37,7 @@ class WedmSource(
         get() = "WE动漫"
 
     override suspend fun fetchHomePageData(): HomePageData {
-        val document = getDocument(toAbsolute("/"))
+        val document = okHttpClient.getDocument(toAbsolute("/"))
         val animeSeries = mutableListOf<NamedValue<List<AnimeData>>>()
         document.selectFirst(".flickity-slider")?.let { container ->
             animeSeries.add(
@@ -63,7 +62,7 @@ class WedmSource(
     }
 
     override suspend fun fetchDetailPage(animeId: String): AnimeDetailPageData {
-        val document = getDocument(toAbsolute("/video/$animeId.html"))
+        val document = okHttpClient.getDocument(toAbsolute("/video/$animeId.html"))
         val imageUrl = document.selectFirst(".myui-vodlist__thumb img")!!.dataset()["original"]!!
         val detailContainer = document.selectFirst(".myui-content__detail")!!
         val title = detailContainer.selectFirst(".title")!!.text().trim()
@@ -114,7 +113,7 @@ class WedmSource(
 
     override suspend fun searchAnimation(keyword: String, page: Int): SearchPageData {
         val document =
-            getDocument(toAbsolute("/search/${keyword.encodeUrl()}----------$page---.html"))
+            okHttpClient.getDocument(toAbsolute("/search/${keyword.encodeUrl()}----------$page---.html"))
         val videos = document.getElementById("searchList")?.children()?.map { it.parseAnime() }
             ?: emptyList()
         val haveNextPage = document.selectFirst(".myui-page")?.getElementsByTag("a")
@@ -127,11 +126,11 @@ class WedmSource(
         return SearchPageData(page = page, hasNextPage = haveNextPage, animeList = videos)
     }
 
-    override suspend fun fetchVideoUrl(episodeId: String): Resource<String> {
+    override suspend fun fetchVideoUrl(episodeId: String): Resource<AnimationSource.VideoUrlResult> {
         val newHtml =
-            getHtml(
+            okHttpClient.getHtml(
                 "https://danmu.yhdmjx.com/m3u8.php?url=" + extractPlayerParam(
-                    getHtml(
+                    okHttpClient.getHtml(
                         toAbsolute(
                             "/play/$episodeId.html"
                         )
@@ -149,7 +148,7 @@ class WedmSource(
             )
             doFinal(Base64.decode(encryptedUrl, Base64.DEFAULT))
         }.toString(Charsets.UTF_8)
-        return Resource.Success(plainUrl)
+        return Resource.Success(AnimationSource.VideoUrlResult(plainUrl))
     }
 
     private fun extractPlayerParam(html: String): String {
@@ -238,7 +237,7 @@ class WedmSource(
                 if (baseUrl != null) {
                     return baseUrl!!
                 }
-                val doc = getDocument(PUBLISH_PAGE_URL)
+                val doc = okHttpClient.getDocument(PUBLISH_PAGE_URL)
                 val website = doc.selectFirst(".main .item p")?.text()?.trim()?.let { text ->
                     val colonIndex =
                         text.lastIndexOf('：').takeIf { it >= 0 } ?: text.lastIndexOf(':')
@@ -256,33 +255,6 @@ class WedmSource(
             }
         }
         return baseUrl!!
-    }
-
-    private fun getDocument(url: String): Document {
-        val req = Request.Builder()
-            .url(url = url)
-            .get()
-            .build()
-        val resp = okHttpClient.newCall(req).execute()
-        if (resp.code != 200) {
-            throw RuntimeException("请求失败,code: ${resp.code}")
-        }
-        return Jsoup.parse(resp.body?.string() ?: throw RuntimeException("${url}响应体为空"))
-            .apply {
-                setBaseUri(url)
-            }
-    }
-
-    fun getHtml(url: String): String {
-        val req = Request.Builder()
-            .url(url = url)
-            .get()
-            .build()
-        val resp = okHttpClient.newCall(req).execute()
-        if (resp.code != 200) {
-            throw RuntimeException("请求失败,code: ${resp.code}")
-        }
-        return resp.body?.string() ?: throw RuntimeException("${url}响应体为空")
     }
 
     companion object {

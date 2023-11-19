@@ -11,9 +11,9 @@ import com.jing.sakura.data.NamedValue
 import com.jing.sakura.data.Resource
 import com.jing.sakura.data.SearchPageData
 import com.jing.sakura.data.UpdateTimeLine
+import com.jing.sakura.extend.getDocument
+import com.jing.sakura.extend.getHtml
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.net.URLEncoder
@@ -28,7 +28,7 @@ class MxdmSource(private val okHttpClient: OkHttpClient) : AnimationSource {
         get() = "MX动漫"
 
     override suspend fun fetchHomePageData(): HomePageData {
-        val document = getDocument(BASE_URL)
+        val document = okHttpClient.getDocument(BASE_URL)
         val contents = document.select(".content .module .module-list>.module-items").iterator()
         val titles = document.select(".content .module .module-title").iterator()
         val seriesList: MutableList<NamedValue<List<AnimeData>>> = mutableListOf()
@@ -81,7 +81,7 @@ class MxdmSource(private val okHttpClient: OkHttpClient) : AnimationSource {
     }
 
     override suspend fun fetchDetailPage(animeId: String): AnimeDetailPageData {
-        val document = getDocument("/dongman/$animeId.html")
+        val document = okHttpClient.getDocument("$BASE_URL/dongman/$animeId.html")
         val videoTitle = document.selectFirst(".page-title")!!.text().trim()
         val tags = document.select(".video-info-aux a").joinToString(" | ") { it.text().trim() }
         val desc = document.selectFirst(".video-info-content")?.text()
@@ -137,7 +137,8 @@ class MxdmSource(private val okHttpClient: OkHttpClient) : AnimationSource {
     }
 
     override suspend fun searchAnimation(keyword: String, page: Int): SearchPageData {
-        val document = getDocument("/search/${encodeUrlComponent(keyword)}----------$page---.html")
+        val document =
+            okHttpClient.getDocument("$BASE_URL/search/${encodeUrlComponent(keyword)}----------$page---.html")
         val videos = document.select(".module-search-item").map { videoElement ->
             val link = videoElement.selectFirst("a")!!
             val url = link.absUrl("href")
@@ -167,11 +168,11 @@ class MxdmSource(private val okHttpClient: OkHttpClient) : AnimationSource {
     private fun encodeUrlComponent(text: String): String =
         URLEncoder.encode(text, Charsets.UTF_8.name())
 
-    override suspend fun fetchVideoUrl(episodeId: String): Resource<String> {
-        val html = getHtml("/dongmanplay/$episodeId.html")
+    override suspend fun fetchVideoUrl(episodeId: String): Resource<AnimationSource.VideoUrlResult> {
+        val html = okHttpClient.getHtml("$BASE_URL/dongmanplay/$episodeId.html")
 
         val newHtml =
-            getHtml("https://danmu.yhdmjx.com/m3u8.php?url=" + extractPlayerParam(html))
+            okHttpClient.getHtml("https://danmu.yhdmjx.com/m3u8.php?url=" + extractPlayerParam(html))
 
         val btToken = extractBtToken(newHtml)
         val encryptedUrl = extractEncryptedUrl(newHtml)
@@ -184,7 +185,7 @@ class MxdmSource(private val okHttpClient: OkHttpClient) : AnimationSource {
             )
             doFinal(Base64.decode(encryptedUrl, Base64.DEFAULT))
         }.toString(Charsets.UTF_8)
-        return Resource.Success(plainUrl)
+        return Resource.Success(AnimationSource.VideoUrlResult(url = plainUrl))
     }
 
     fun extractEncryptedUrl(html: String): String {
@@ -229,7 +230,7 @@ class MxdmSource(private val okHttpClient: OkHttpClient) : AnimationSource {
     }
 
     override suspend fun fetchUpdateTimeline(): UpdateTimeLine {
-        val document = getDocument(BASE_URL)
+        val document = okHttpClient.getDocument(BASE_URL)
         val tabs = document.selectFirst(".mxoneweek-tabs") ?: return UpdateTimeLine(
             current = -1,
             timeline = emptyList()
@@ -267,32 +268,6 @@ class MxdmSource(private val okHttpClient: OkHttpClient) : AnimationSource {
         return UpdateTimeLine(current = activeTabIndex, result)
     }
 
-    fun getHtml(url: String): String {
-        val actualUrl = if (url.startsWith("http")) {
-            url
-        } else {
-            BASE_URL + url
-        }
-        val req = Request.Builder()
-            .url(actualUrl)
-            .get()
-            .build()
-        return okHttpClient.newCall(req).execute().body?.string()
-            ?: throw RuntimeException("响应为空, url: $actualUrl")
-    }
-
-    fun getDocument(url: String): Document {
-        val actualUrl = if (url.startsWith("http")) {
-            url
-        } else {
-            BASE_URL + url
-        }
-        return getHtml(actualUrl).run {
-            Jsoup.parse(this).apply {
-                setBaseUri(actualUrl)
-            }
-        }
-    }
 
 
     fun hasNextPage(document: Document): Boolean {

@@ -21,11 +21,16 @@ interface AnimationSource {
 
     suspend fun searchAnimation(keyword: String, page: Int): SearchPageData
 
-    suspend fun fetchVideoUrl(episodeId: String): Resource<String>
+    suspend fun fetchVideoUrl(episodeId: String): Resource<VideoUrlResult>
 
     suspend fun fetchUpdateTimeline(): UpdateTimeLine
 
     fun supportTimeline(): Boolean = true
 
     fun supportSearch(): Boolean = true
+
+    data class VideoUrlResult(
+        val url: String,
+        val headers: Map<String, String> = emptyMap()
+    )
 }

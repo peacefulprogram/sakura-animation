@@ -89,9 +89,10 @@ class VideoPlayerViewModel(
                     is Resource.Success -> _videoUrl.emit(
                         Resource.Success(
                             EpisodeUrlAndHistory(
-                                videoUrl = resp.data,
+                                videoUrl = resp.data.url,
                                 videoDuration = history?.videoDuration ?: 0L,
-                                lastPlayPosition = history?.lastPlayTime ?: 0L
+                                lastPlayPosition = history?.lastPlayTime ?: 0L,
+                                headers = resp.data.headers
                             )
                         )
                     )

@@ -4,7 +4,10 @@ import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
 import android.util.Log
+import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.room.Room
+import coil.ImageLoader
+import coil.ImageLoaderFactory
 import com.jing.sakura.detail.DetailPageViewModel
 import com.jing.sakura.history.HistoryViewModel
 import com.jing.sakura.home.HomeViewModel
@@ -23,11 +26,16 @@ import org.koin.android.ext.koin.androidLogger
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.androidx.viewmodel.dsl.viewModelOf
 import org.koin.core.context.startKoin
+import org.koin.core.qualifier.qualifier
 import org.koin.dsl.module
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLContext
+import javax.net.ssl.X509TrustManager
 
-class SakuraApplication : Application() {
+class SakuraApplication : Application(), ImageLoaderFactory {
 
     override fun onCreate() {
         super.onCreate()
@@ -43,11 +51,26 @@ class SakuraApplication : Application() {
         @SuppressLint("StaticFieldLeak")
         lateinit var context: Context
             private set
+
+        const val USER_AGENT =
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36"
     }
 
     private fun httpModule() = module {
-        single { provideOkHttpClient() }
-        single { WebPageRepository(get()) }
+        single(qualifier(KoinOkHttpClient.DATA)) { provideOkHttpClient() }
+        single(qualifier(KoinOkHttpClient.MEDIA)) {
+            basicOkhttpClient()
+                .apply {
+                    if (BuildConfig.DEBUG) {
+                        addNetworkInterceptor(
+                            HttpLoggingInterceptor().apply {
+                                level = HttpLoggingInterceptor.Level.BASIC
+                            })
+                    }
+                }
+                .build()
+        }
+        single { WebPageRepository(get(qualifier = qualifier(KoinOkHttpClient.DATA))) }
     }
 
     private fun roomModule() = module {
@@ -83,21 +106,53 @@ class SakuraApplication : Application() {
     }
 
     private fun provideOkHttpClient(): OkHttpClient {
-        return OkHttpClient.Builder().connectTimeout(10L, TimeUnit.SECONDS)
-            .readTimeout(10L, TimeUnit.SECONDS).addInterceptor(Interceptor { chain ->
+        return basicOkhttpClient().apply {
+            if (BuildConfig.DEBUG) {
+                addInterceptor(HttpLoggingInterceptor().apply {
+                    level = HttpLoggingInterceptor.Level.BASIC
+                })
+            }
+        }.build()
+    }
+
+    private fun provideOkhttpMedia3DataSourceFactory(): OkHttpDataSource.Factory {
+        val client = basicOkhttpClient()
+            .addInterceptor(HttpLoggingInterceptor().apply {
+                level = HttpLoggingInterceptor.Level.BASIC
+            })
+            .build()
+        return OkHttpDataSource.Factory { req -> client.newCall(req) }
+    }
+
+    private fun basicOkhttpClient(): OkHttpClient.Builder {
+        val trustManager = object : X509TrustManager {
+            override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {
+            }
+
+            override fun checkServerTrusted(
+                chain: Array<out X509Certificate>?,
+                authType: String?
+            ) {
+            }
+
+            override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
+        }
+        val sslSocketFactory = SSLContext.getInstance("TLS").apply {
+            init(null, arrayOf(trustManager), SecureRandom())
+        }.socketFactory
+        return OkHttpClient.Builder()
+            .connectTimeout(10L, TimeUnit.SECONDS)
+            .readTimeout(10L, TimeUnit.SECONDS)
+            .sslSocketFactory(sslSocketFactory, trustManager)
+            .hostnameVerifier { _, _ -> true }
+            .addInterceptor(Interceptor { chain ->
                 chain.request().newBuilder().header(
                     "user-agent",
-                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36"
+                    USER_AGENT
                 ).build().let {
                     chain.proceed(it)
                 }
-            }).apply {
-                if (BuildConfig.DEBUG) {
-                    addInterceptor(HttpLoggingInterceptor().apply {
-                        level = HttpLoggingInterceptor.Level.BASIC
-                    })
-                }
-            }.build()
+            })
     }
 
     override fun onTerminate() {
@@ -105,4 +160,12 @@ class SakuraApplication : Application() {
         super.onTerminate()
     }
 
+    override fun newImageLoader(): ImageLoader = ImageLoader(this).newBuilder()
+        .okHttpClient(basicOkhttpClient().build())
+        .allowHardware(true)
+        .build()
+
+    enum class KoinOkHttpClient {
+        DATA, MEDIA
+    }
 }

@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import androidx.annotation.OptIn
 import androidx.core.graphics.drawable.toDrawable
 import androidx.leanback.app.ProgressBarManager
 import androidx.leanback.app.VideoSupportFragment
@@ -12,10 +13,15 @@ import androidx.leanback.app.VideoSupportFragmentGlueHost
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.MediaItem
-import com.google.android.exoplayer2.Player.Listener
-import com.google.android.exoplayer2.ext.leanback.LeanbackPlayerAdapter
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
+import androidx.media3.common.Player.Listener
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.okhttp.OkHttpDataSource
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.ui.leanback.LeanbackPlayerAdapter
+import com.jing.sakura.SakuraApplication
 import com.jing.sakura.data.Resource
 import com.jing.sakura.extend.dpToPixels
 import com.jing.sakura.extend.secondsToMinuteAndSecondText
@@ -23,8 +29,10 @@ import com.jing.sakura.extend.showLongToast
 import com.jing.sakura.extend.showShortToast
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
 import org.koin.android.ext.android.get
 import org.koin.core.parameter.parametersOf
+import org.koin.core.qualifier.qualifier
 
 class AnimePlayerFragment : VideoSupportFragment() {
 
@@ -34,6 +42,9 @@ class AnimePlayerFragment : VideoSupportFragment() {
     private var glue: ProgressTransportControlGlue<LeanbackPlayerAdapter>? = null
 
     private lateinit var mProgressBarManager: ProgressBarManager
+
+    private val okHttpClient: OkHttpClient =
+        get(qualifier = qualifier(SakuraApplication.KoinOkHttpClient.MEDIA))
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,6 +59,7 @@ class AnimePlayerFragment : VideoSupportFragment() {
         // Create the MediaSession that will be used throughout the lifecycle of this Fragment.
     }
 
+    @OptIn(UnstableApi::class)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         view.background = Color.BLACK.toDrawable()
         mProgressBarManager = ProgressBarManager()
@@ -69,21 +81,36 @@ class AnimePlayerFragment : VideoSupportFragment() {
                     when (urlAndTime) {
                         is Resource.Success -> {
                             mProgressBarManager.hide()
-                            MediaItem.fromUri(urlAndTime.data.videoUrl).let {
-                                exoplayer?.setMediaItem(it)
-                                if (urlAndTime.data.lastPlayPosition > 0) {
-                                    // 距离结束小于10秒,当作播放结束
-                                    if (urlAndTime.data.videoDuration > 0 && urlAndTime.data.videoDuration - urlAndTime.data.lastPlayPosition < 10_000) {
-                                        requireContext().showShortToast("上次已播放完,将从头开始播放")
-                                    } else {
-                                        val seekTo = urlAndTime.data.lastPlayPosition
-                                        exoplayer?.seekTo(seekTo)
-                                        requireContext().showShortToast("已定位到上次播放位置:${(seekTo / 1000).secondsToMinuteAndSecondText()}")
+
+                            val okhttpDataSourceFactory =
+                                OkHttpDataSource.Factory { req -> okHttpClient.newCall(req) }
+                                    .apply {
+                                        setDefaultRequestProperties(urlAndTime.data.headers)
                                     }
+                            val isM3u8 = urlAndTime.data.videoUrl.contains("m3u8")
+                            val mediaSource =
+                                DefaultMediaSourceFactory(okhttpDataSourceFactory).createMediaSource(
+                                    MediaItem.Builder().setUri(urlAndTime.data.videoUrl)
+                                        .apply {
+                                            if (isM3u8) {
+                                                setMimeType(MimeTypes.APPLICATION_M3U8)
+                                            }
+                                        }
+                                        .build()
+                                )
+                            exoplayer?.setMediaSource(mediaSource)
+                            if (urlAndTime.data.lastPlayPosition > 0) {
+                                // 距离结束小于10秒,当作播放结束
+                                if (urlAndTime.data.videoDuration > 0 && urlAndTime.data.videoDuration - urlAndTime.data.lastPlayPosition < 10_000) {
+                                    requireContext().showShortToast("上次已播放完,将从头开始播放")
+                                } else {
+                                    val seekTo = urlAndTime.data.lastPlayPosition
+                                    exoplayer?.seekTo(seekTo)
+                                    requireContext().showShortToast("已定位到上次播放位置:${(seekTo / 1000).secondsToMinuteAndSecondText()}")
                                 }
-                                exoplayer?.prepare()
-                                exoplayer?.play()
                             }
+                            exoplayer?.prepare()
+                            exoplayer?.play()
                         }
 
                         is Resource.Loading -> {
@@ -141,6 +168,7 @@ class AnimePlayerFragment : VideoSupportFragment() {
         }
     }
 
+    @OptIn(UnstableApi::class)
     private fun prepareGlue(localExoplayer: ExoPlayer) {
         ProgressTransportControlGlue(
             context = requireContext(),
@@ -176,8 +204,6 @@ class AnimePlayerFragment : VideoSupportFragment() {
         // be tweaked for better performance.
         private const val PLAYER_UPDATE_INTERVAL_MILLIS = 100L
 
-        // A short name to identify the media session when debugging.
-        private const val MEDIA_SESSION_TAG = "ReferenceAppKotlin"
     }
 
 
