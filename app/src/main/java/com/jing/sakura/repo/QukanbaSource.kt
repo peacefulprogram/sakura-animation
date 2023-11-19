@@ -9,11 +9,11 @@ import com.jing.sakura.data.AnimePlayListEpisode
 import com.jing.sakura.data.HomePageData
 import com.jing.sakura.data.NamedValue
 import com.jing.sakura.data.Resource
-import com.jing.sakura.data.UpdateTimeLine
 import com.jing.sakura.extend.encodeUrl
 import com.jing.sakura.extend.getDocument
 import com.jing.sakura.extend.getHtml
 import okhttp3.OkHttpClient
+import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
@@ -143,11 +143,16 @@ class QukanbaSource(private val okHttpClient: OkHttpClient) : AnimationSource {
         )
     }
 
+    override fun supportSearch(): Boolean = true
     override suspend fun searchAnimation(keyword: String, page: Int): AnimePageData {
         val document =
             okHttpClient.getDocument(toAbsolute("/index.php/vod/search/page/$page/wd/${keyword.encodeUrl()}.html"))
         val videos = document.getElementsByClass("fed-deta-info").map { it.parseAnime() }
-        val hasNextPage = document.selectFirst(".fed-page-info")
+        return AnimePageData(page = page, hasNextPage = hasNextPage(document), animeList = videos)
+    }
+
+    private fun hasNextPage(document: Document): Boolean {
+        return document.selectFirst(".fed-page-info")
             ?.children()
             ?.run {
                 val nextPageDisabled =
@@ -156,7 +161,6 @@ class QukanbaSource(private val okHttpClient: OkHttpClient) : AnimationSource {
                     }?.hasClass("fed-btns-disad") ?: true
                 !nextPageDisabled
             } ?: false
-        return AnimePageData(page = page, hasNextPage = hasNextPage, animeList = videos)
     }
 
     override suspend fun fetchVideoUrl(episodeId: String): Resource<AnimationSource.VideoUrlResult> {
@@ -235,9 +239,6 @@ class QukanbaSource(private val okHttpClient: OkHttpClient) : AnimationSource {
         return html.substring(i2 + 1, i3)
     }
 
-    override suspend fun fetchUpdateTimeline(): UpdateTimeLine {
-        throw UnsupportedOperationException()
-    }
 
     private fun toAbsolute(url: String): String = BASE_URL + url
 
@@ -278,7 +279,113 @@ class QukanbaSource(private val okHttpClient: OkHttpClient) : AnimationSource {
         return i
     }
 
-    override fun supportTimeline(): Boolean = false
+    override fun supportSearchByCategory(): Boolean = true
+
+
+    override suspend fun getVideoCategories(): List<VideoCategoryGroup> {
+        val document = okHttpClient.getDocument(toAbsolute("/index.php/vod/type/id/33.html"))
+        val idKeyword = "/id/"
+        val typeCategories =
+            document.select(".fed-head-info > .fed-part-case > .fed-navs-info > .fed-menu-info > li > a")
+                .asSequence()
+                .filter {
+                    it.attr("href").contains(idKeyword)
+                }
+                .map {
+                    val value = it.attr("href").run {
+                        substring(indexOf(idKeyword) + idKeyword.length, lastIndexOf('.'))
+                    }
+                    VideoCategory(label = it.text().trim(), value = value)
+                }
+                .toList()
+        val result = mutableListOf(
+            VideoCategoryGroup(
+                name = "频道",
+                key = "id",
+                defaultValue = "21",
+                categories = typeCategories
+            )
+        )
+        document.select(".fed-scre-list > dl").forEach { groupEl ->
+            val name = groupEl.child(0).text().trim()
+            val videoCategories = mutableListOf(VideoCategory(label = "全部", value = ""))
+            var key = ""
+            var valueIndex = -1
+            groupEl.getElementsByTag("a").forEach { linkEl ->
+                val keyword = "/show/"
+                val parts = linkEl.attr("href").run {
+                    substring(indexOf(keyword) + keyword.length, lastIndexOf('.'))
+                }.split('/')
+                val value = if (valueIndex >= 0) {
+                    parts[valueIndex]
+                } else {
+                    var v = ""
+                    for (i in parts.indices step 2) {
+                        if (parts[i] == "id") {
+                            continue
+                        }
+                        key = parts[i]
+                        valueIndex = i + 1
+                        v = parts[valueIndex]
+                        break
+                    }
+                    if (v.isEmpty()) {
+                        throw RuntimeException("解析筛选项失败: " + linkEl.attr("href"))
+                    }
+                    v
+                }
+
+                videoCategories.add(VideoCategory(label = linkEl.text().trim(), value = value))
+            }
+            result.add(
+                VideoCategoryGroup(
+                    name = name,
+                    key = key,
+                    defaultValue = "",
+                    categories = videoCategories
+                )
+            )
+        }
+        result.add(
+            VideoCategoryGroup(
+                name = "排序",
+                key = "by",
+                defaultValue = "time",
+                categories = listOf(
+                    VideoCategory(label = "按时间", value = "time"),
+                    VideoCategory(label = "按人气", value = "hits"),
+                    VideoCategory(label = "按评分", value = "score"),
+                )
+            )
+        )
+        return result
+    }
+
+    override suspend fun queryByCategory(
+        categories: List<NamedValue<String>>,
+        page: Int
+    ): AnimePageData {
+        val urlBuilder = StringBuilder("$BASE_URL/index.php/vod/show")
+        val valueMap =
+            categories.filter { it.value.isNotBlank() }.associate { it.name to it.value }
+        arrayOf("area", "by", "class", "id", "year").forEach { key ->
+            val value = valueMap[key]
+            if (value?.isNotBlank() == true) {
+                urlBuilder.append('/')
+                    .append(key)
+                    .append('/')
+                    .append(value)
+            }
+        }
+        urlBuilder.append(".html")
+        val document = okHttpClient.getDocument(urlBuilder.toString())
+        val videos = document.getElementsByClass("fed-list-item").map { it.parseAnime() }
+        return AnimePageData(
+            page = page,
+            hasNextPage = hasNextPage(document),
+            animeList = videos
+        )
+    }
 
     companion object {
         const val BASE_URL = "https://k6dm.com"

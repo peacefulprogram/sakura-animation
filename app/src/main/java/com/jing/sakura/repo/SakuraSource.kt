@@ -125,6 +125,8 @@ class SakuraSource(private val okHttpClient: OkHttpClient) : AnimationSource {
         )
     }
 
+    override fun supportSearch(): Boolean = true
+
     override suspend fun searchAnimation(keyword: String, page: Int): AnimePageData {
 
         var searchUrl = "${SAKURA_URL}/search/${keyword.encodeUrl()}/"
@@ -184,6 +186,8 @@ class SakuraSource(private val okHttpClient: OkHttpClient) : AnimationSource {
             Resource.Error(e.message ?: "")
         }
     }
+
+    override fun supportTimeline(): Boolean = true
 
     override suspend fun fetchUpdateTimeline(): UpdateTimeLine {
         val home = okHttpClient.getDocument(SAKURA_URL)

@@ -11,7 +11,6 @@ import com.jing.sakura.data.AnimePlayListEpisode
 import com.jing.sakura.data.HomePageData
 import com.jing.sakura.data.NamedValue
 import com.jing.sakura.data.Resource
-import com.jing.sakura.data.UpdateTimeLine
 import com.jing.sakura.extend.encodeUrl
 import com.jing.sakura.extend.getDocument
 import com.jing.sakura.extend.getHtml
@@ -111,6 +110,8 @@ class WedmSource(
         )
     }
 
+    override fun supportSearch(): Boolean = true
+
     override suspend fun searchAnimation(keyword: String, page: Int): AnimePageData {
         val document =
             okHttpClient.getDocument(toAbsolute("/search/${keyword.encodeUrl()}----------$page---.html"))
@@ -192,11 +193,6 @@ class WedmSource(
         return html.substring(i2 + 1, i3)
     }
 
-    override suspend fun fetchUpdateTimeline(): UpdateTimeLine {
-        throw UnsupportedOperationException()
-    }
-
-    override fun supportTimeline(): Boolean = false
 
     private fun Element.parseAnime(): AnimeData {
         val linkEl = selectFirst("a")!!

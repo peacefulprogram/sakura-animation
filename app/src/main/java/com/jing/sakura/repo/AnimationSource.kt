@@ -21,16 +21,18 @@ interface AnimationSource {
 
     suspend fun fetchVideoUrl(episodeId: String): Resource<VideoUrlResult>
 
-    suspend fun fetchUpdateTimeline(): UpdateTimeLine
+    suspend fun fetchUpdateTimeline(): UpdateTimeLine {
+        throw UnsupportedOperationException()
+    }
 
     suspend fun getVideoCategories(): List<VideoCategoryGroup> = emptyList()
 
     suspend fun queryByCategory(categories: List<NamedValue<String>>, page: Int): AnimePageData =
         throw UnsupportedOperationException()
 
-    fun supportTimeline(): Boolean = true
+    fun supportTimeline(): Boolean = false
 
-    fun supportSearch(): Boolean = true
+    fun supportSearch(): Boolean = false
 
     fun supportSearchByCategory(): Boolean = false
 

@@ -229,6 +229,8 @@ class MxdmSource(private val okHttpClient: OkHttpClient) : AnimationSource {
         )["url"] ?: throw RuntimeException("未获取到播放信息")
     }
 
+    override fun supportTimeline(): Boolean = true
+
     override suspend fun fetchUpdateTimeline(): UpdateTimeLine {
         val document = okHttpClient.getDocument(BASE_URL)
         val tabs = document.selectFirst(".mxoneweek-tabs") ?: return UpdateTimeLine(
@@ -360,6 +362,8 @@ class MxdmSource(private val okHttpClient: OkHttpClient) : AnimationSource {
             animeList = videos
         )
     }
+
+    override fun supportSearch(): Boolean = true
 
     companion object {
         const val SOURCE_ID = "mxdm"
