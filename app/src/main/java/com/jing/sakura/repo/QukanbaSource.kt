@@ -1,7 +1,6 @@
 package com.jing.sakura.repo
 
 import android.util.Base64
-import android.util.Log
 import com.jing.sakura.data.AnimeData
 import com.jing.sakura.data.AnimeDetailPageData
 import com.jing.sakura.data.AnimePlayList
@@ -174,35 +173,37 @@ class QukanbaSource(private val okHttpClient: OkHttpClient) : AnimationSource {
             okHttpClient.getHtml(toAbsolute(iframeEl.dataset()["pars"] + plain.encodeUrl())) {
                 header("referer", playPageUrl)
             }
-        val key = "var purl"
-        val anotherPageUrl = html.indexOf(key).run {
-            val startIndex = html.indexOf('\'', this)
-            val endIndex = html.indexOf('\'', startIndex + 1)
-            html.substring(startIndex + 1, endIndex)
-        }
+        val anotherPageUrl =
+            extractKeywordValue(html, "purl") ?: throw RuntimeException("未获取到播放器链接")
         val newHtml = okHttpClient.getHtml(anotherPageUrl) {
             header("referer", "$BASE_URL/")
         }
-        val leToken = extractLeToken(newHtml)
-        val encryptedUrl = extractEncryptedUrl(newHtml)
+        val leToken = extractKeywordValue(newHtml, "le_token")
+        if (leToken != null) {
+            val encryptedUrl = extractEncryptedUrl(newHtml)
+            val plainUrl = Cipher.getInstance("AES/CBC/PKCS5Padding").run {
+                init(
+                    Cipher.DECRYPT_MODE,
+                    SecretKeySpec("A42EAC0C2B408472".toByteArray(), "AES"),
+                    IvParameterSpec(leToken.toByteArray(Charsets.UTF_8))
+                )
+                doFinal(Base64.decode(encryptedUrl, Base64.DEFAULT))
+            }.toString(Charsets.UTF_8)
+            return Resource.Success(
+                AnimationSource.VideoUrlResult(
+                    url = plainUrl,
+                    headers = mapOf("referer" to anotherPageUrl.run {
+                        substring(0, indexOf('/', indexOf("://") + 3) + 1)
+                    })
+                )
+            )
+        }
+        val videoUrl = extractKeywordValue(newHtml, "url")
+        if (videoUrl != null) {
+            return Resource.Success(AnimationSource.VideoUrlResult(videoUrl))
+        }
+        throw RuntimeException("未获取到视频链接")
 
-        Log.e(TAG, "fetchVideoUrl: leToken: $leToken, encryptedUrl: $encryptedUrl")
-        val plainUrl = Cipher.getInstance("AES/CBC/PKCS5Padding").run {
-            init(
-                Cipher.DECRYPT_MODE,
-                SecretKeySpec("A42EAC0C2B408472".toByteArray(), "AES"),
-                IvParameterSpec(leToken.toByteArray(Charsets.UTF_8))
-            )
-            doFinal(Base64.decode(encryptedUrl, Base64.DEFAULT))
-        }.toString(Charsets.UTF_8)
-        return Resource.Success(
-            AnimationSource.VideoUrlResult(
-                url = plainUrl,
-                headers = mapOf("referer" to anotherPageUrl.run {
-                    substring(0, indexOf('/', indexOf("://") + 3) + 1)
-                })
-            )
-        )
     }
 
     private fun extractEncryptedUrl(html: String): String {
@@ -213,10 +214,24 @@ class QukanbaSource(private val okHttpClient: OkHttpClient) : AnimationSource {
         return html.substring(i2 + 1, i3)
     }
 
-    private fun extractLeToken(html: String): String {
-        val i1 = html.indexOf("le_token")
-        val i2 = html.indexOf('"', i1)
-        val i3 = html.indexOf('"', i2 + 1)
+    private fun extractKeywordValue(html: String, keyword: String): String? {
+        val i1 = html.indexOf(keyword)
+        if (i1 < 0) {
+            return null
+        }
+        var i2 = -1
+        var quote = '"'
+        for (i in (i1 + keyword.length + 1)..<html.length) {
+            if (html[i] == '\'' || html[i] == '"') {
+                i2 = i
+                quote = html[i]
+                break
+            }
+        }
+        if (i2 < 0) {
+            return null
+        }
+        val i3 = html.indexOf(quote, i2 + 1)
         return html.substring(i2 + 1, i3)
     }
 
