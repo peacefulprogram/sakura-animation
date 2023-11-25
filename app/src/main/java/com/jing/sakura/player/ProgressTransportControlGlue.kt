@@ -20,14 +20,13 @@ import android.content.Context
 import android.view.KeyEvent
 import android.view.View
 import android.widget.Toast
-import androidx.annotation.VisibleForTesting
+import androidx.core.content.ContextCompat
 import androidx.leanback.media.MediaPlayerAdapter
 import androidx.leanback.media.PlaybackTransportControlGlue
 import androidx.leanback.media.PlayerAdapter
 import androidx.leanback.widget.Action
 import androidx.leanback.widget.ArrayObjectAdapter
-import androidx.leanback.widget.PlaybackControlsRow.FastForwardAction
-import androidx.leanback.widget.PlaybackControlsRow.RewindAction
+import com.jing.sakura.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -66,12 +65,18 @@ class ProgressTransportControlGlue<T : PlayerAdapter>(
 
     private var backPressed = false
 
-    // Define actions for fast forward and rewind operations.
-    @VisibleForTesting
-    var skipForwardAction: FastForwardAction = FastForwardAction(context)
+    private val episodeListAction: Action = object : Action(10) {
+        init {
+            icon = ContextCompat.getDrawable(context, R.drawable.play_list)
+        }
+    }
 
-    @VisibleForTesting
-    var skipBackwardAction: RewindAction = RewindAction(context)
+
+    private val replayAction: Action = object : Action(20) {
+        init {
+            icon = ContextCompat.getDrawable(context, R.drawable.replay)
+        }
+    }
 
     override fun onCreatePrimaryActions(primaryActionsAdapter: ArrayObjectAdapter) {
         // super.onCreatePrimaryActions() will create the play / pause action.
@@ -79,8 +84,8 @@ class ProgressTransportControlGlue<T : PlayerAdapter>(
 
         // Add the rewind and fast forward actions following the play / pause action.
         primaryActionsAdapter.apply {
-            add(skipBackwardAction)
-            add(skipForwardAction)
+            add(episodeListAction)
+            add(replayAction)
         }
     }
 
@@ -92,24 +97,10 @@ class ProgressTransportControlGlue<T : PlayerAdapter>(
     override fun onActionClicked(action: Action) {
         // Primary actions are handled manually. The superclass handles default play/pause action.
         when (action) {
-            skipBackwardAction -> skipBackward()
-            skipForwardAction -> skipForward()
+            replayAction -> playerAdapter.seekTo(0L)
+            episodeListAction -> chooseEpisode()
             else -> super.onActionClicked(action)
         }
-    }
-
-    /** Skips backward 30 seconds.  */
-    private fun skipBackward() {
-        var newPosition: Long = currentPosition - THIRTY_SECONDS
-        newPosition = newPosition.coerceAtLeast(0L)
-        playerAdapter.seekTo(newPosition)
-    }
-
-    /** Skips forward 30 seconds.  */
-    private fun skipForward() {
-        var newPosition: Long = currentPosition + THIRTY_SECONDS
-        newPosition = newPosition.coerceAtMost(duration)
-        playerAdapter.seekTo(newPosition)
     }
 
     override fun onKey(v: View?, keyCode: Int, keyEvent: KeyEvent): Boolean {
