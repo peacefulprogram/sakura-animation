@@ -47,6 +47,7 @@ import com.jing.sakura.history.HistoryViewModel
 import com.jing.sakura.room.VideoHistoryEntity
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun VideoHistoryScreen(viewModel: HistoryViewModel) {
 
@@ -183,6 +184,7 @@ fun VideoHistoryScreen(viewModel: HistoryViewModel) {
             coroutineScope.launch {
                 gridState.scrollToItem(0)
                 firstVideoFocusRequester.requestFocus()
+                viewModel.deleteAllHistory()
             }
         },
         onCancel = {

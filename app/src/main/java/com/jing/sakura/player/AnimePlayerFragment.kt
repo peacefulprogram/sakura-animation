@@ -111,6 +111,7 @@ class AnimePlayerFragment : VideoSupportFragment() {
                             }
                             exoplayer?.prepare()
                             exoplayer?.play()
+                            viewModel.changePlayingEpisode(urlAndTime.data.episode)
                         }
 
                         is Resource.Loading -> {

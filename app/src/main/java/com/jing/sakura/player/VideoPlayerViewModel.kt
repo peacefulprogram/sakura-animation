@@ -8,6 +8,7 @@ import com.jing.sakura.data.Resource
 import com.jing.sakura.repo.WebPageRepository
 import com.jing.sakura.room.VideoHistoryDao
 import com.jing.sakura.room.VideoHistoryEntity
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -33,8 +34,10 @@ class VideoPlayerViewModel(
 
     private var _saveHistoryJob: Job? = null
 
+    @Volatile
     private var currentPlayPosition: Long = 0L
 
+    @Volatile
     private var videoDuration: Long = 0L
 
     val playList: List<AnimePlayListEpisode>
@@ -53,6 +56,9 @@ class VideoPlayerViewModel(
     val videoUrl: StateFlow<Resource<EpisodeUrlAndHistory>>
         get() = _videoUrl
 
+    @Volatile
+    private var playingEpisode: AnimePlayListEpisode? = null
+
 
     init {
         viewModelScope.launch {
@@ -65,6 +71,10 @@ class VideoPlayerViewModel(
             }
         }
         init()
+    }
+
+    fun changePlayingEpisode(episode: AnimePlayListEpisode) {
+        this.playingEpisode = episode
     }
 
     fun init() {
@@ -92,7 +102,8 @@ class VideoPlayerViewModel(
                                 videoUrl = resp.data.url,
                                 videoDuration = history?.videoDuration ?: 0L,
                                 lastPlayPosition = history?.lastPlayTime ?: 0L,
-                                headers = resp.data.headers
+                                headers = resp.data.headers,
+                                episode = episode
                             )
                         )
                     )
@@ -100,6 +111,9 @@ class VideoPlayerViewModel(
                     else -> {}
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) {
+                    throw e
+                }
                 Log.e(TAG, "fetchVideoUrl: ${e.message}", e)
                 _videoUrl.emit(Resource.Error(e.message ?: ""))
             }
@@ -116,21 +130,21 @@ class VideoPlayerViewModel(
         stopSaveHistory()
         _saveHistoryJob = viewModelScope.launch(Dispatchers.IO) {
             while (true) {
-                val history = withContext(Dispatchers.Main) {
-                    VideoHistoryEntity(
+                playingEpisode?.let { ep ->
+                    val history = VideoHistoryEntity(
                         animeId = anime.animeId,
                         animeName = anime.animeName,
-                        episodeId = playList[playIndex].episodeId,
-                        lastEpisodeName = playList[playIndex].episode,
+                        episodeId = ep.episodeId,
+                        lastEpisodeName = ep.episode,
                         updateTime = System.currentTimeMillis(),
                         lastPlayTime = currentPlayPosition,
                         coverUrl = anime.coverUrl,
                         videoDuration = videoDuration,
                         sourceId = anime.sourceId
                     )
-                }
-                videoHistoryDao.saveHistory(history)
-                delay(5000L)
+                    videoHistoryDao.saveHistory(history)
+                    delay(5000L)
+                } ?: delay(2000L)
             }
         }
     }
