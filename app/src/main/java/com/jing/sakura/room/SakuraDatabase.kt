@@ -80,6 +80,7 @@ abstract class SakuraDatabase : RoomDatabase() {
 
         val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(db: SupportSQLiteDatabase) {
+                // 主键添加animeId列
                 db.execSQL(
                     """
                     CREATE TABLE `video_history_temp` (
@@ -108,7 +109,7 @@ abstract class SakuraDatabase : RoomDatabase() {
                                                     `videoDuration`,
                                                     `coverUrl`)
                     select `episodeId`,
-                            ?,
+                            `sourceId`,
                             `animeName`,
                             `animeId`,
                             `lastEpisodeName`,
