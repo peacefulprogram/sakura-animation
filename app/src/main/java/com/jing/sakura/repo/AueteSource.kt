@@ -70,9 +70,33 @@ class AueteSource(val okHttpClient: OkHttpClient) : AnimationSource {
                     str.substring(idx + 1, end)
                 }
             }
+        val infoList = mutableListOf<String>()
+        val infoEls = container.select(".message > p")
+        var desc = ""
+        for ((index, p) in infoEls.withIndex()) {
+            val text = p.text().trim()
+            if (text.contains("简介")) {
+                if (index + 1 < infoEls.size) {
+                    desc = infoEls[index + 1].text().trim()
+                }
+                break
+            }
+            infoList.add(text)
+
+        }
 
         val playlists = container.select("[id=player_list]").map { playlistContainer ->
-            val name = playlistContainer.selectFirst(".title")!!.text().trim()
+            var name = playlistContainer.selectFirst(".title")!!.text().trim()
+            name.indexOf('』').let {
+                if (it >= 0) {
+                    name = name.substring(it + 1)
+                }
+            }
+            name.indexOf('：').let {
+                if (it >= 0) {
+                    name = name.substring(0, it)
+                }
+            }
             val episodes = playlistContainer.select("ul > li > a").map { epEl ->
                 val id = epEl.attr("href").let {
                     it.substring(it.lastIndexOf('/') + 1, it.lastIndexOf('.'))
@@ -86,7 +110,8 @@ class AueteSource(val okHttpClient: OkHttpClient) : AnimationSource {
             animeName = title,
             imageUrl = img,
             playLists = playlists,
-            description = ""
+            description = desc,
+            infoList = infoList
         )
     }
 
