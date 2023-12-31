@@ -165,7 +165,10 @@ class QukanbaSource(private val okHttpClient: OkHttpClient) : AnimationSource {
             } ?: false
     }
 
-    override suspend fun fetchVideoUrl(episodeId: String): Resource<AnimationSource.VideoUrlResult> {
+    override suspend fun fetchVideoUrl(
+        animeId: String,
+        episodeId: String
+    ): Resource<AnimationSource.VideoUrlResult> {
         val parts = episodeId.split('-')
         val playPageUrl =
             toAbsolute("/index.php/vod/play/id/${parts[0]}/sid/${parts[1]}/nid/${parts[2]}.html")
@@ -301,7 +304,7 @@ class QukanbaSource(private val okHttpClient: OkHttpClient) : AnimationSource {
                 }
                 .toList()
         val result = mutableListOf(
-            VideoCategoryGroup(
+            VideoCategoryGroup.NormalCategoryGroup(
                 name = "频道",
                 key = "id",
                 defaultValue = "21",
@@ -340,7 +343,7 @@ class QukanbaSource(private val okHttpClient: OkHttpClient) : AnimationSource {
                 videoCategories.add(VideoCategory(label = linkEl.text().trim(), value = value))
             }
             result.add(
-                VideoCategoryGroup(
+                VideoCategoryGroup.NormalCategoryGroup(
                     name = name,
                     key = key,
                     defaultValue = "",
@@ -349,7 +352,7 @@ class QukanbaSource(private val okHttpClient: OkHttpClient) : AnimationSource {
             )
         }
         result.add(
-            VideoCategoryGroup(
+            VideoCategoryGroup.NormalCategoryGroup(
                 name = "排序",
                 key = "by",
                 defaultValue = "time",

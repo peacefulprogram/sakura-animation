@@ -171,7 +171,10 @@ class SakuraSource(private val okHttpClient: OkHttpClient) : AnimationSource {
         )
     }
 
-    override suspend fun fetchVideoUrl(episodeId: String): Resource<AnimationSource.VideoUrlResult> {
+    override suspend fun fetchVideoUrl(
+        animeId: String,
+        episodeId: String
+    ): Resource<AnimationSource.VideoUrlResult> {
         return try {
             okHttpClient.getDocument("$SAKURA_URL/v/$episodeId.html").select(".bofang > div")
                 .takeIf { it.size > 0 }

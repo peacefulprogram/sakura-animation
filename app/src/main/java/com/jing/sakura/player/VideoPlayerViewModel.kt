@@ -89,8 +89,13 @@ class VideoPlayerViewModel(
         _videoUrl.emit(Resource.Loading)
         withContext(Dispatchers.IO) {
             try {
-                val resp = repository.fetchVideoUrl(episode.episodeId, sourceId = anime.sourceId)
+                val resp = repository.fetchVideoUrl(
+                    episode.episodeId,
+                    animeId = anime.animeId,
+                    sourceId = anime.sourceId
+                )
                 val history = videoHistoryDao.queryHistoryByEpisodeId(
+                    animeId = anime.animeId,
                     episodeId = episode.episodeId,
                     sourceId = anime.sourceId
                 )

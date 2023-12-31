@@ -136,7 +136,10 @@ class WedmSource(
                 indexOfLast { it.hasClass("btn-warm") } < size - 3
             } ?: false
 
-    override suspend fun fetchVideoUrl(episodeId: String): Resource<AnimationSource.VideoUrlResult> {
+    override suspend fun fetchVideoUrl(
+        animeId: String,
+        episodeId: String
+    ): Resource<AnimationSource.VideoUrlResult> {
         val newHtml =
             okHttpClient.getHtml(
                 "https://danmu.yhdmjx.com/m3u8.php?url=" + extractPlayerParam(
@@ -288,14 +291,14 @@ class WedmSource(
                     .split('-')[valueIndex]
                 VideoCategory(label = el.text().trim(), value = value)
             }
-            VideoCategoryGroup(
+            VideoCategoryGroup.NormalCategoryGroup(
                 name = name,
                 key = valueIndex.toString(),
                 defaultValue = categories[0].value,
                 categories = categories
             )
         }
-        val channel = VideoCategoryGroup(
+        val channel = VideoCategoryGroup.NormalCategoryGroup(
             name = "频道",
             key = "0",
             defaultValue = "ribendongman",

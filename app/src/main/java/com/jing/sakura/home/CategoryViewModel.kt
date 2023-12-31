@@ -24,8 +24,12 @@ class CategoryViewModel(
     val sourceId: String
 ) : ViewModel() {
 
-    private val _categories = MutableStateFlow<Resource<List<VideoCategoryGroup>>>(Resource.Loading)
-    val categories: StateFlow<Resource<List<VideoCategoryGroup>>>
+    @Volatile
+    private var rawCategoryGroups = emptyList<VideoCategoryGroup>()
+
+    private val _categories =
+        MutableStateFlow<Resource<List<VideoCategoryGroup.NormalCategoryGroup>>>(Resource.Loading)
+    val categories: StateFlow<Resource<List<VideoCategoryGroup.NormalCategoryGroup>>>
         get() = _categories
 
     private val _selectedCategories = MutableStateFlow<Map<String, String>>(emptyMap())
@@ -64,16 +68,33 @@ class CategoryViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             _categories.emit(Resource.Loading)
             try {
+                val displayCategories = mutableListOf<VideoCategoryGroup.NormalCategoryGroup>()
                 val categoryGroups = webPageRepository.getVideoCategories(sourceId)
                 val defaultValues = mutableMapOf<String, String>()
                 categoryGroups.forEach { group ->
-                    defaultValues[group.key] = group.defaultValue
+                    when (group) {
+                        is VideoCategoryGroup.NormalCategoryGroup -> {
+                            displayCategories.add(group)
+                            defaultValues[group.key] = group.defaultValue
+                        }
+
+                        is VideoCategoryGroup.DynamicCategoryGroup -> {
+                            val actualGroup = group.dependsOnKey.map { k ->
+                                NamedValue(name = k, value = defaultValues[k]!!)
+                            }.let {
+                                group.categoriesProvider(it)
+                            }
+                            defaultValues[actualGroup.key] = actualGroup.defaultValue
+                            displayCategories.add(actualGroup)
+                        }
+                    }
                 }
                 queryCategories =
                     defaultValues.entries.map { NamedValue(name = it.key, value = it.value) }
                 _selectedCategories.emit(defaultValues)
                 _userSelectedCategories.emit(HashMap(defaultValues))
-                _categories.emit(Resource.Success(categoryGroups))
+                _categories.emit(Resource.Success(displayCategories))
+                rawCategoryGroups = categoryGroups
             } catch (ex: Exception) {
                 if (ex is CancellationException) {
                     throw ex
@@ -97,8 +118,40 @@ class CategoryViewModel(
     }
 
     fun onUserSelect(key: String, value: String) {
+        val newValues = mutableMapOf<String, String>()
+        val changedGroups = mutableMapOf<Int, VideoCategoryGroup.NormalCategoryGroup>()
+        val oldValue = _userSelectedCategories.value
+        rawCategoryGroups.forEachIndexed { index, group ->
+            if (group is VideoCategoryGroup.DynamicCategoryGroup && group.dependsOnKey.contains(key)) {
+                val newGroup = group.dependsOnKey.map { k ->
+                    NamedValue(name = k, value = if (k == key) value else oldValue[k]!!)
+                }.let {
+                    group.categoriesProvider(it)
+                }
+                newValues[group.key] = newGroup.defaultValue
+                changedGroups[index] = newGroup
+            } else {
+                newValues[group.key] = oldValue[group.key]!!
+            }
+        }
+        newValues[key] = value
         _userSelectedCategories.update {
-            HashMap(it).apply { this[key] = value }
+            newValues
+        }
+        if (changedGroups.isNotEmpty()) {
+            _categories.update {
+                when (it) {
+                    is Resource.Success -> {
+                        val old = it.data
+                        val list = List(old.size) { idx ->
+                            changedGroups[idx] ?: old[idx]
+                        }
+                        Resource.Success(list)
+                    }
+
+                    else -> it
+                }
+            }
         }
     }
 

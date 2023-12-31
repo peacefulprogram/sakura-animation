@@ -19,9 +19,11 @@ interface AnimationSource {
 
     suspend fun fetchDetailPage(animeId: String): AnimeDetailPageData
 
-    suspend fun searchAnimation(keyword: String, page: Int): AnimePageData
+    suspend fun searchAnimation(keyword: String, page: Int): AnimePageData {
+        throw UnsupportedOperationException()
+    }
 
-    suspend fun fetchVideoUrl(episodeId: String): Resource<VideoUrlResult>
+    suspend fun fetchVideoUrl(animeId: String, episodeId: String): Resource<VideoUrlResult>
 
     suspend fun fetchUpdateTimeline(): UpdateTimeLine {
         throw UnsupportedOperationException()

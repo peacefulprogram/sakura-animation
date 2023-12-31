@@ -17,7 +17,8 @@ class WebPageRepository(
             SakuraSource(okHttpClient),
             MxdmSource(okHttpClient),
             WedmSource(okHttpClient),
-            QukanbaSource(okHttpClient)
+            QukanbaSource(okHttpClient),
+            AueteSource(okHttpClient)
         )
 
     private val animationSourceMap = animationSources.associateBy { it.sourceId }
@@ -37,9 +38,10 @@ class WebPageRepository(
 
     suspend fun fetchVideoUrl(
         episodeId: String,
-        sourceId: String
+        sourceId: String,
+        animeId: String
     ): Resource<AnimationSource.VideoUrlResult> =
-        requireAnimationSource(sourceId).fetchVideoUrl(episodeId)
+        requireAnimationSource(sourceId).fetchVideoUrl(animeId, episodeId)
 
     suspend fun fetchUpdateTimeline(sourceId: String): UpdateTimeLine =
         requireAnimationSource(sourceId).fetchUpdateTimeline()

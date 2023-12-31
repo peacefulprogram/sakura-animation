@@ -117,7 +117,7 @@ fun AnimeCategoryScreen(viewModel: CategoryViewModel) {
     }
     if (showCategoryDialog) {
         VideoCategoryDialog(
-            categoryGroups = (categoriesResource as Resource.Success<List<VideoCategoryGroup>>).data,
+            categoryGroups = (categoriesResource as Resource.Success<List<VideoCategoryGroup.NormalCategoryGroup>>).data,
             selectedValue = selectedValue,
             onSelect = { key, value ->
                 viewModel.onUserSelect(key, value)
@@ -225,7 +225,7 @@ fun VideoGrid(
 @OptIn(ExperimentalTvMaterial3Api::class, ExperimentalTvFoundationApi::class)
 @Composable
 fun VideoCategoryDialog(
-    categoryGroups: List<VideoCategoryGroup>,
+    categoryGroups: List<VideoCategoryGroup.NormalCategoryGroup>,
     selectedValue: Map<String, String>,
     onSelect: (key: String, value: String) -> Unit,
     onApply: () -> Unit

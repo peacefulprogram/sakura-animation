@@ -76,7 +76,11 @@ class SakuraApplication : Application(), ImageLoaderFactory {
     private fun roomModule() = module {
         single {
             val builder = Room.databaseBuilder(context, SakuraDatabase::class.java, "sk_db")
-                .addMigrations(SakuraDatabase.MIGRATION_1_2, SakuraDatabase.MIGRATION_2_3)
+                .addMigrations(
+                    SakuraDatabase.MIGRATION_1_2,
+                    SakuraDatabase.MIGRATION_2_3,
+                    SakuraDatabase.MIGRATION_3_4
+                )
             if (BuildConfig.DEBUG) {
                 builder.setQueryCallback({ sqlQuery, bindArgs ->
                     Log.d("RoomQuery", "sql: $sqlQuery, args: $bindArgs")

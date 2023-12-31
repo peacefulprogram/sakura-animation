@@ -8,7 +8,7 @@ import com.jing.sakura.repo.SakuraSource
 
 @Database(
     entities = [VideoHistoryEntity::class, SearchHistoryEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class SakuraDatabase : RoomDatabase() {
@@ -77,5 +77,53 @@ abstract class SakuraDatabase : RoomDatabase() {
             }
 
         }
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE `video_history_temp` (
+                    `episodeId` TEXT NOT NULL, 
+                    `sourceId` TEXT NOT NULL, 
+                    `animeName` TEXT NOT NULL, 
+                    `animeId` TEXT NOT NULL, 
+                    `lastEpisodeName` TEXT NOT NULL, 
+                    `updateTime` INTEGER NOT NULL, 
+                    `lastPlayTime` INTEGER NOT NULL, 
+                    `videoDuration` INTEGER NOT NULL, 
+                    `coverUrl` TEXT NOT NULL, 
+                    PRIMARY KEY(`animeId`, `episodeId`, `sourceId`)
+                    )
+                """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    insert into video_history_temp(`episodeId`,
+                                                    `sourceId`,
+                                                    `animeName`,
+                                                    `animeId`,
+                                                    `lastEpisodeName`,
+                                                    `updateTime`,
+                                                    `lastPlayTime`,
+                                                    `videoDuration`,
+                                                    `coverUrl`)
+                    select `episodeId`,
+                            ?,
+                            `animeName`,
+                            `animeId`,
+                            `lastEpisodeName`,
+                            `updateTime`,
+                            `lastPlayTime`,
+                            `videoDuration`,
+                            `coverUrl`
+                    from video_history
+                """.trimIndent(), arrayOf(SakuraSource.SOURCE_ID)
+                )
+                db.execSQL("drop table video_history")
+                db.execSQL("alter table video_history_temp rename to video_history")
+            }
+
+        }
+
     }
 }

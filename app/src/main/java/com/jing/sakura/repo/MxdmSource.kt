@@ -171,7 +171,10 @@ class MxdmSource(private val okHttpClient: OkHttpClient) : AnimationSource {
     private fun encodeUrlComponent(text: String): String =
         URLEncoder.encode(text, Charsets.UTF_8.name())
 
-    override suspend fun fetchVideoUrl(episodeId: String): Resource<AnimationSource.VideoUrlResult> {
+    override suspend fun fetchVideoUrl(
+        animeId: String,
+        episodeId: String
+    ): Resource<AnimationSource.VideoUrlResult> {
         val html = okHttpClient.getHtml("$BASE_URL/dongmanplay/$episodeId.html")
 
         val newHtml =
@@ -324,7 +327,7 @@ class MxdmSource(private val okHttpClient: OkHttpClient) : AnimationSource {
                         defaultValue = value
                     }
                 }
-                VideoCategoryGroup(
+                VideoCategoryGroup.NormalCategoryGroup(
                     name = name ?: "排序",
                     key = valueIndex.toString(),
                     defaultValue = defaultValue,
@@ -332,7 +335,7 @@ class MxdmSource(private val okHttpClient: OkHttpClient) : AnimationSource {
                 )
             }
         return listOf(
-            VideoCategoryGroup(
+            VideoCategoryGroup.NormalCategoryGroup(
                 name = "分类",
                 key = "0",
                 defaultValue = "riman",

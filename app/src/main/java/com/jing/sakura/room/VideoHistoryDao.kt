@@ -29,8 +29,12 @@ interface VideoHistoryDao {
     @Query("select * from video_history where animeId = :animeId and sourceId = :sourceId order by updateTime desc limit 1")
     fun queryLastHistoryOfAnimeId(animeId: String, sourceId: String): VideoHistoryEntity?
 
-    @Query("select * from video_history where episodeId = :episodeId and sourceId = :sourceId")
-    fun queryHistoryByEpisodeId(episodeId: String, sourceId: String): VideoHistoryEntity?
+    @Query("select * from video_history where animeId = :animeId and episodeId = :episodeId and sourceId = :sourceId")
+    fun queryHistoryByEpisodeId(
+        episodeId: String,
+        sourceId: String,
+        animeId: String
+    ): VideoHistoryEntity?
 
     @Query("delete from video_history")
     fun deleteAll()
