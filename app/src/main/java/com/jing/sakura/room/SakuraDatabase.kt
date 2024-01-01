@@ -118,7 +118,7 @@ abstract class SakuraDatabase : RoomDatabase() {
                             `videoDuration`,
                             `coverUrl`
                     from video_history
-                """.trimIndent(), arrayOf(SakuraSource.SOURCE_ID)
+                """.trimIndent()
                 )
                 db.execSQL("drop table video_history")
                 db.execSQL("alter table video_history_temp rename to video_history")
