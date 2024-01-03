@@ -12,8 +12,8 @@ android {
         applicationId = "com.jing.sakura"
         minSdk = 21
         targetSdk = 34
-        versionCode = 4
-        versionName = "2.1.1"
+        versionCode = 5
+        versionName = "2.2.1"
 
     }
     packaging {
@@ -56,7 +56,7 @@ android {
 
 dependencies {
 
-    val room_version = "2.6.0"
+    val roomVersion = "2.6.1"
     val composeTvVersion = "1.0.0-alpha10"
 
     debugImplementation("androidx.compose.ui:ui-tooling")
@@ -69,7 +69,7 @@ dependencies {
         exclude(group = "androidx.leanback", module = "leanback")
     }
 
-    implementation("androidx.activity:activity-compose:1.8.0")
+    implementation("androidx.activity:activity-compose:1.8.2")
     implementation(platform("androidx.compose:compose-bom:2023.10.01"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
@@ -87,10 +87,10 @@ dependencies {
     implementation("androidx.tv:tv-material:$composeTvVersion")
 
     // room
-    implementation("androidx.room:room-runtime:$room_version")
-    annotationProcessor("androidx.room:room-compiler:$room_version")
-    ksp("androidx.room:room-compiler:$room_version")
-    implementation("androidx.room:room-paging:$room_version")
+    implementation("androidx.room:room-runtime:$roomVersion")
+    annotationProcessor("androidx.room:room-compiler:$roomVersion")
+    ksp("androidx.room:room-compiler:$roomVersion")
+    implementation("androidx.room:room-paging:$roomVersion")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
@@ -105,14 +105,14 @@ dependencies {
     implementation("io.coil-kt:coil:2.4.0")
     implementation("io.coil-kt:coil-compose:2.4.0")
 
-    implementation("org.jsoup:jsoup:1.16.1")
-    implementation("com.squareup.okhttp3:okhttp:4.11.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+    implementation("org.jsoup:jsoup:1.17.1")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
 
     // koin
-    implementation("io.insert-koin:koin-core:3.4.2")
-    implementation("io.insert-koin:koin-android:3.4.2")
+    implementation("io.insert-koin:koin-core:3.5.0")
+    implementation("io.insert-koin:koin-android:3.5.0")
     implementation("io.insert-koin:koin-androidx-compose:3.4.5")
 
     implementation("androidx.palette:palette-ktx:1.0.0")
@@ -127,5 +127,7 @@ dependencies {
     implementation("androidx.paging:paging-runtime-ktx:3.2.1")
 
     implementation("com.google.code.gson:gson:2.10.1")
+
+    implementation("androidx.webkit:webkit:1.9.0")
 
 }

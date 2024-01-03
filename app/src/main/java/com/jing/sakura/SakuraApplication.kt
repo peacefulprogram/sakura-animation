@@ -4,10 +4,13 @@ import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
 import android.util.Log
+import android.webkit.CookieManager
+import android.webkit.WebSettings
 import androidx.room.Room
 import coil.ImageLoader
 import coil.ImageLoaderFactory
 import com.jing.sakura.detail.DetailPageViewModel
+import com.jing.sakura.extend.AndroidCookieJar
 import com.jing.sakura.history.HistoryViewModel
 import com.jing.sakura.home.CategoryViewModel
 import com.jing.sakura.home.HomeViewModel
@@ -39,6 +42,7 @@ class SakuraApplication : Application(), ImageLoaderFactory {
 
     override fun onCreate() {
         super.onCreate()
+        CookieManager.getInstance().removeAllCookies { }
         context = this
         startKoin {
             androidContext(this@SakuraApplication)
@@ -52,8 +56,7 @@ class SakuraApplication : Application(), ImageLoaderFactory {
         lateinit var context: Context
             private set
 
-        const val USER_AGENT =
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36"
+        val USER_AGENT by lazy { WebSettings.getDefaultUserAgent(context) }
     }
 
     private fun httpModule() = module {
@@ -111,13 +114,15 @@ class SakuraApplication : Application(), ImageLoaderFactory {
     }
 
     private fun provideOkHttpClient(): OkHttpClient {
-        return basicOkhttpClient().apply {
-            if (BuildConfig.DEBUG) {
-                addInterceptor(HttpLoggingInterceptor().apply {
-                    level = HttpLoggingInterceptor.Level.BASIC
-                })
-            }
-        }.build()
+        return basicOkhttpClient()
+            .cookieJar(AndroidCookieJar())
+            .apply {
+                if (BuildConfig.DEBUG) {
+                    addInterceptor(HttpLoggingInterceptor().apply {
+                        level = HttpLoggingInterceptor.Level.HEADERS
+                    })
+                }
+            }.build()
     }
 
     private fun basicOkhttpClient(): OkHttpClient.Builder {
@@ -143,7 +148,7 @@ class SakuraApplication : Application(), ImageLoaderFactory {
             .hostnameVerifier { _, _ -> true }
             .addInterceptor(Interceptor { chain ->
                 chain.request().newBuilder().header(
-                    "user-agent",
+                    "User-Agent",
                     USER_AGENT
                 ).build().let {
                     chain.proceed(it)

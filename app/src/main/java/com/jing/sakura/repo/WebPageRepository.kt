@@ -14,11 +14,12 @@ class WebPageRepository(
 
     val animationSources =
         listOf(
-            SakuraSource(okHttpClient),
             MxdmSource(okHttpClient),
+            ChangZhangSource(okHttpClient),
+            SakuraSource(okHttpClient),
+            AueteSource(okHttpClient),
             WedmSource(okHttpClient),
             QukanbaSource(okHttpClient),
-            AueteSource(okHttpClient)
         )
 
     private val animationSourceMap = animationSources.associateBy { it.sourceId }

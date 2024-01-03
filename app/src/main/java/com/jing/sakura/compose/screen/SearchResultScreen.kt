@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
 import androidx.tv.foundation.lazy.grid.TvGridCells
 import androidx.tv.foundation.lazy.grid.TvGridItemSpan
 import androidx.tv.foundation.lazy.grid.TvLazyVerticalGrid
@@ -53,7 +54,7 @@ fun SearchResultScreen(viewModel: SearchResultViewModel) {
                 item(span = { TvGridItemSpan(maxLineSpan) }) {
                     Text(text = "搜索结果", style = MaterialTheme.typography.headlineMedium)
                 }
-                items(count = itemCount, key = { pagingItems[it]?.url ?: it }) { index ->
+                items(count = itemCount, key = pagingItems.itemKey { it.id }) { index ->
                     val video = pagingItems[index] ?: return@items
                     Box(
                         modifier = Modifier.size(containerWidth, containerHeight),

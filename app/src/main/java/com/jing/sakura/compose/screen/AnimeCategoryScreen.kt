@@ -35,6 +35,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
 import androidx.tv.foundation.ExperimentalTvFoundationApi
 import androidx.tv.foundation.PivotOffsets
 import androidx.tv.foundation.lazy.grid.TvGridCells
@@ -160,20 +161,23 @@ fun VideoGrid(
                 }
                 items(
                     count = pagingItems.itemCount,
-                    key = { pagingItems[it]?.url ?: it }) { index ->
+                    key = pagingItems.itemKey { it.id }
+                ) { index ->
                     val video = pagingItems[index] ?: return@items
                     Box(
                         modifier = Modifier.size(containerWidth, containerHeight),
                         contentAlignment = Alignment.Center
                     ) {
                         VideoCard(
-                            modifier = Modifier.size(cardWidth, cardHeight).run {
-                                if (index == 0) {
-                                    focusRequester(firstItemFocusRequester)
-                                } else {
-                                    this
-                                }
-                            },
+                            modifier = Modifier
+                                .size(cardWidth, cardHeight)
+                                .run {
+                                    if (index == 0) {
+                                        focusRequester(firstItemFocusRequester)
+                                    } else {
+                                        this
+                                    }
+                                },
                             imageUrl = video.imageUrl,
                             title = video.title,
                             subTitle = video.currentEpisode,

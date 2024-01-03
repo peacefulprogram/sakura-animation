@@ -214,12 +214,14 @@ fun RelativeVideoRow(videos: List<AnimeData>, sourceId: String) {
                     items(count = videos.size, key = { videos[it].id }) { videoIndex ->
                         val video = videos[videoIndex]
                         VideoCard(
-                            modifier = Modifier.size(
-                                dimensionResource(id = R.dimen.poster_width),
-                                dimensionResource(id = R.dimen.poster_height)
-                            ).run {
-                                if (videoIndex == 0) initiallyFocused() else restorableFocus()
-                            },
+                            modifier = Modifier
+                                .size(
+                                    dimensionResource(id = R.dimen.poster_width),
+                                    dimensionResource(id = R.dimen.poster_height)
+                                )
+                                .run {
+                                    if (videoIndex == 0) initiallyFocused() else restorableFocus()
+                                },
                             imageUrl = video.imageUrl,
                             title = video.title
                         ) {
@@ -336,34 +338,37 @@ fun VideoInfoRow(videoDetail: AnimeDetailPageData, viewModel: DetailPageViewMode
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     content = {
                         items(items = videoDetail.infoList) { info ->
-                            Text(text = info)
+                            Text(text = info, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         }
-                        item(span = { TvGridItemSpan(maxLineSpan) }) {
-                            Surface(
-                                modifier = Modifier.padding(2.dp),
-                                onClick = { showDescDialog = true },
-                                scale = ClickableSurfaceScale.None,
-                                colors = ClickableSurfaceDefaults.colors(
-                                    focusedContainerColor = MaterialTheme.colorScheme.surface
-                                ),
-                                border = ClickableSurfaceDefaults.border(
-                                    focusedBorder = Border(
-                                        BorderStroke(
-                                            2.dp, MaterialTheme.colorScheme.border
+                        if (videoDetail.description.isNotEmpty()) {
+                            item(span = { TvGridItemSpan(maxLineSpan) }) {
+                                Surface(
+                                    modifier = Modifier.padding(2.dp),
+                                    onClick = { showDescDialog = true },
+                                    scale = ClickableSurfaceScale.None,
+                                    colors = ClickableSurfaceDefaults.colors(
+                                        focusedContainerColor = MaterialTheme.colorScheme.surface
+                                    ),
+                                    border = ClickableSurfaceDefaults.border(
+                                        focusedBorder = Border(
+                                            BorderStroke(
+                                                2.dp, MaterialTheme.colorScheme.border
+                                            )
+                                        )
+                                    ),
+                                    shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.extraSmall)
+                                ) {
+                                    Text(
+                                        text = videoDetail.description,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.padding(
+                                            horizontal = 6.dp, vertical = 3.dp
                                         )
                                     )
-                                ),
-                                shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.extraSmall)
-                            ) {
-                                Text(
-                                    text = videoDetail.description,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.padding(
-                                        horizontal = 6.dp, vertical = 3.dp
-                                    )
-                                )
+                                }
                             }
+
                         }
                     })
             }

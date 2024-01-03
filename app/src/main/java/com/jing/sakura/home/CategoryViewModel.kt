@@ -50,7 +50,10 @@ class CategoryViewModel(
     }
 
     val pager = Pager(
-        config = PagingConfig(pageSize = webPageRepository.requireAnimationSource(sourceId).pageSize)
+        config = PagingConfig(
+            pageSize = webPageRepository.requireAnimationSource(sourceId).pageSize,
+            prefetchDistance = 20
+        )
     ) {
         AnimeDataPagingSource {
             if (queryCategories.isEmpty()) {

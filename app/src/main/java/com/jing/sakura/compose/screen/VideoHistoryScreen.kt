@@ -30,6 +30,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
 import androidx.tv.foundation.lazy.grid.TvGridCells
 import androidx.tv.foundation.lazy.grid.TvGridItemSpan
 import androidx.tv.foundation.lazy.grid.TvLazyVerticalGrid
@@ -97,23 +98,27 @@ fun VideoHistoryScreen(viewModel: HistoryViewModel) {
                         )
                     }
                 }
-                items(count = pagingItems.itemCount) { videoIndex ->
+                items(
+                    count = pagingItems.itemCount,
+                    key = pagingItems.itemKey { it.sourceId to it.animeId }) { videoIndex ->
                     val video = pagingItems[videoIndex]!!
                     Box(
                         modifier = Modifier.size(containerWidth, containerHeight),
                         contentAlignment = Alignment.Center
                     ) {
                         VideoCard(
-                            modifier = Modifier.size(
-                                dimensionResource(id = R.dimen.history_poster_width),
-                                dimensionResource(id = R.dimen.history_poster_height)
-                            ).run {
-                                if (videoIndex == 0) {
-                                    focusRequester(firstVideoFocusRequester)
-                                } else {
-                                    this
-                                }
-                            },
+                            modifier = Modifier
+                                .size(
+                                    dimensionResource(id = R.dimen.history_poster_width),
+                                    dimensionResource(id = R.dimen.history_poster_height)
+                                )
+                                .run {
+                                    if (videoIndex == 0) {
+                                        focusRequester(firstVideoFocusRequester)
+                                    } else {
+                                        this
+                                    }
+                                },
                             imageUrl = video.coverUrl,
                             title = video.animeName,
                             subTitle = video.lastEpisodeName,
