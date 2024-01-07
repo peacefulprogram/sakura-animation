@@ -10,6 +10,7 @@ Android TV端动漫app, 使用[jetpack compose](https://developer.android.com/tr
 - [x] [去看吧](https://k6dm.com)
 - [x] [WE动漫](https://wedm.cc/)
 - [x] [厂长资源](https://www.czzy88.com/)
+- [x] [LIBVIO](https://www.libvio.me/)
 - [x] [Auete影视](https://auete.pro/)
 
 # 已支持的功能

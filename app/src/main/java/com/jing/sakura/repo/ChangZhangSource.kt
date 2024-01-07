@@ -9,6 +9,7 @@ import com.jing.sakura.data.AnimePlayListEpisode
 import com.jing.sakura.data.HomePageData
 import com.jing.sakura.data.NamedValue
 import com.jing.sakura.data.Resource
+import com.jing.sakura.extend.CloudFlareHelper
 import com.jing.sakura.extend.asDocument
 import com.jing.sakura.extend.bodyString
 import com.jing.sakura.extend.encodeUrl
@@ -283,7 +284,7 @@ class ChangZhangSource(val okHttpClient: OkHttpClient) : AnimationSource {
     override fun supportSearchByCategory(): Boolean = true
 
     override suspend fun searchAnimation(keyword: String, page: Int): AnimePageData {
-        val doc = okHttpClient.newRequest(true) {
+        val doc = okHttpClient.newRequest(CloudFlareHelper) {
             url("$BASE_URL/xssearch?q=${keyword.encodeUrl()}&f=_all&p=$page")
             get()
         }.asDocument()

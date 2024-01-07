@@ -14,21 +14,21 @@ import org.jsoup.nodes.Document
 import java.nio.charset.Charset
 
 fun OkHttpClient.newRequest(
-    bypassCloudFlare: Boolean = false,
+    webViewCookieHelper: WebViewCookieHelper? = null,
     block: Request.Builder.() -> Unit
 ): Response {
     val req = Request.Builder()
         .apply(block)
         .build()
     val resp = newCall(req).execute()
-    if (!bypassCloudFlare || !CloudFlareHelper.shouldProcessCloudflare(resp)) {
+    if (webViewCookieHelper == null || !webViewCookieHelper.shouldIntercept(resp)) {
         return resp
     }
     resp.close()
     val cookieJar = this.cookieJar
     // 删除已有cookie
     if (cookieJar is AndroidCookieJar) {
-        cookieJar.remove(req.url, listOf(CloudFlareHelper.CLOUD_FLARE_COOKIE_NAME))
+        cookieJar.remove(req.url, listOf(webViewCookieHelper.cookieName))
     } else {
         val oldCookies = cookieJar.loadForRequest(req.url)
         if (oldCookies.isNotEmpty()) {
@@ -42,15 +42,14 @@ fun OkHttpClient.newRequest(
             }.let { cookieJar.saveFromResponse(req.url, it) }
         }
     }
-    val cfCookie = try {
-        CloudFlareHelper.passCloudFlareCheck(resp.request)
+    val success = try {
+        webViewCookieHelper.obtainCookieThroughWebView(resp.request)
     } catch (ex: Exception) {
-        Log.e("OkHttpClient.newRequest", "cloud flare检测错误, ${ex.message}", ex)
-        null
+        Log.e("OkHttpClient.newRequest", "WebViewCookieHelper检测错误, ${ex.message}", ex)
+        false
     }
-    cfCookie ?: throw RuntimeException("cloud flare 检测失败")
-    if (cookieJar !is AndroidCookieJar) {
-        cookieJar.saveFromResponse(req.url, listOf(cfCookie))
+    if (!success) {
+        throw RuntimeException("cloud flare 检测失败")
     }
     return newCall(Request.Builder().apply(block).build()).execute()
 }

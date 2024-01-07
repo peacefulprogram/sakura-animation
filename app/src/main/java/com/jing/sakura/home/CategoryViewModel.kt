@@ -131,7 +131,12 @@ class CategoryViewModel(
                 }.let {
                     group.categoriesProvider(it)
                 }
-                newValues[group.key] = newGroup.defaultValue
+                if (newGroup.categories.isNotEmpty()) {
+                    val newValue =
+                        oldValue[newGroup.key]?.takeIf { old -> newGroup.categories.any { it.value == old } }
+                            ?: newGroup.defaultValue
+                    newValues[group.key] = newValue
+                }
                 changedGroups[index] = newGroup
             } else {
                 newValues[group.key] = oldValue[group.key]!!

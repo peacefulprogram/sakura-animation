@@ -15,10 +15,11 @@ class WebPageRepository(
     val animationSources =
         listOf(
             MxdmSource(okHttpClient),
+            LibVioSource(okHttpClient),
             ChangZhangSource(okHttpClient),
-            SakuraSource(okHttpClient),
             AueteSource(okHttpClient),
             WedmSource(okHttpClient),
+            SakuraSource(okHttpClient),
             QukanbaSource(okHttpClient),
         )
 
