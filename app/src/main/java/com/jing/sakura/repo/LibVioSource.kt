@@ -25,6 +25,7 @@ import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.net.URLDecoder
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
@@ -40,6 +41,8 @@ class LibVioSource(private val okHttpClient: OkHttpClient) : AnimationSource {
     private var videoCategoryGroups: List<VideoCategoryGroup>? = null
 
     private val videoCategoryLock = Mutex()
+
+    private val playerServerCache = ConcurrentHashMap<String, String>()
 
     override suspend fun fetchHomePageData(): HomePageData {
         val containers = getRequest("/").asDocument().getElementsByClass("stui-vodlist")
@@ -83,7 +86,7 @@ class LibVioSource(private val okHttpClient: OkHttpClient) : AnimationSource {
             val name =
                 playlistEl.previousElementSibling()?.takeIf { it.hasClass("stui-pannel__head") }
                     ?.text()?.trim() ?: continue
-            if (name.contains("下载") || name.contains("网盘")) {
+            if (name.contains("下载") || name.contains("网盘") || name.contains("云盘")) {
                 continue
             }
             val episodes = playlistEl.select("a").map { el ->
@@ -147,11 +150,51 @@ class LibVioSource(private val okHttpClient: OkHttpClient) : AnimationSource {
             "2" -> URLDecoder.decode(Base64.decode(url).toString(Charsets.UTF_8), "utf-8")
             else -> url
         }
+        val playFrom = cfg["from"]?.toString()?.takeIf { it.isNotEmpty() }
+            ?: throw RuntimeException("播放器配置中无from属性")
+        var playerServer = playerServerCache[playFrom]
+        if (playerServer?.isNotEmpty() != true) {
+            val jsContent = getRequest("/static/player/${playFrom}.js?v=3.5").bodyString()
+            playerServer = parseServerFromJs(jsContent)
+            playerServerCache[playFrom] = playerServer
+        }
         val playerHtml =
-            getRequest("https://p2.cfnode1.xyz/ty4.php?url=$data&next=$nextLink&id=$animeId&nid=${cfg["nid"]}").bodyString()
+            getRequest("$playerServer?url=$data&next=$nextLink&id=$animeId&nid=${cfg["nid"]}").bodyString()
         val videoUrl = getStringVariableValue(html = playerHtml, variableName = "urls")
             ?: throw RuntimeException("未获取到视频链接")
         return Resource.Success(AnimationSource.VideoUrlResult(url = videoUrl))
+    }
+
+    private fun parseServerFromJs(jsContent: String): String {
+        val keyword = " src="
+        val idx = jsContent.indexOf(keyword)
+        if (idx == -1) {
+            throw RuntimeException("js中无src")
+        }
+        var startIndex = -1
+        var endIndex = -1
+        for (i in (keyword.length + idx) until jsContent.length) {
+            val c = jsContent[i]
+            if (c == '"' || c == '\'') {
+                if (startIndex == -1) {
+                    startIndex = i + 1
+                } else {
+                    endIndex = i
+                    break
+                }
+            }
+        }
+        if (startIndex >= endIndex) {
+            throw RuntimeException("提前src失败")
+        }
+        return jsContent.substring(startIndex, endIndex).run {
+            val questionIndex = indexOf('?')
+            if (questionIndex == -1) {
+                this
+            } else {
+                substring(0, questionIndex)
+            }
+        }
     }
 
     private fun getStringVariableValue(html: String, variableName: String): String? {

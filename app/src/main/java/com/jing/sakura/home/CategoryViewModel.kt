@@ -45,6 +45,8 @@ class CategoryViewModel(
     @Volatile
     private var queryCategories = emptyList<NamedValue<String>>()
 
+    private val existsVideoIds = mutableSetOf<String>()
+
     init {
         loadCategories()
     }
@@ -55,11 +57,18 @@ class CategoryViewModel(
             prefetchDistance = 20
         )
     ) {
-        AnimeDataPagingSource {
+        AnimeDataPagingSource { page ->
+            if (page == 1) {
+                // 请求第一页时清空数据
+                existsVideoIds.clear()
+            }
             if (queryCategories.isEmpty()) {
-                AnimePageData(it, hasNextPage = false, animeList = emptyList())
+                AnimePageData(page, hasNextPage = false, animeList = emptyList())
             } else {
-                webPageRepository.queryByCategory(queryCategories, it, sourceId = sourceId)
+                val data =
+                    webPageRepository.queryByCategory(queryCategories, page, sourceId = sourceId)
+                // 去重
+                data.copy(animeList = data.animeList.filter { existsVideoIds.add(it.id) })
             }
         }
     }
