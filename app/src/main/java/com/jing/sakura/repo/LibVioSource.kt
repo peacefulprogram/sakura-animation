@@ -312,7 +312,7 @@ class LibVioSource(private val okHttpClient: OkHttpClient) : AnimationSource {
                 defaultValue = parts.first().second[valueIndex],
                 categories = parts.map {
                     VideoCategory(label = it.first, value = it.second[valueIndex])
-                }
+                }.distinctBy { it.label }
             )
         }
     }
@@ -334,7 +334,6 @@ class LibVioSource(private val okHttpClient: OkHttpClient) : AnimationSource {
             VideoCategory(label = "武侠", value = "%E6%AD%A6%E4%BE%A0"),
             VideoCategory(label = "冒险", value = "%E5%86%92%E9%99%A9"),
             VideoCategory(label = "枪战", value = "%E6%9E%AA%E6%88%98"),
-            VideoCategory(label = "恐怖", value = "%E6%81%90%E6%80%96"),
             VideoCategory(label = "悬疑", value = "%E6%82%AC%E7%96%91"),
             VideoCategory(label = "惊悚", value = "%E6%83%8A%E6%82%9A"),
             VideoCategory(label = "经典", value = "%E7%BB%8F%E5%85%B8"),
