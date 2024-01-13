@@ -11,6 +11,7 @@ import com.jing.sakura.repo.AnimationSource
 import com.jing.sakura.repo.MxdmSource
 import com.jing.sakura.repo.WebPageRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -42,6 +43,8 @@ class HomeViewModel(
     var lastHomePageData: HomePageData? = null
         private set
 
+    private var loadDataJob: Job? = null
+
     init {
         loadData(false)
     }
@@ -64,7 +67,8 @@ class HomeViewModel(
         if (lastValue is Resource.Success) {
             lastHomePageData = lastValue.data
         }
-        viewModelScope.launch(Dispatchers.IO) {
+        loadDataJob?.cancel()
+        loadDataJob = viewModelScope.launch(Dispatchers.IO) {
             _homePageData.emit(Resource.Loading(silent = silent))
             try {
                 repository.fetchHomePage(currentSourceId).also {

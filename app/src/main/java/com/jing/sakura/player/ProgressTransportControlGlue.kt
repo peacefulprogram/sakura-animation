@@ -26,11 +26,11 @@ import androidx.leanback.media.PlaybackTransportControlGlue
 import androidx.leanback.media.PlayerAdapter
 import androidx.leanback.widget.Action
 import androidx.leanback.widget.ArrayObjectAdapter
+import androidx.leanback.widget.PlaybackControlsRow.PlayPauseAction
 import com.jing.sakura.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.util.concurrent.TimeUnit
 
 /**
  * Custom [PlaybackTransportControlGlue] that exposes a callback when the progress is updated.
@@ -59,6 +59,7 @@ class ProgressTransportControlGlue<T : PlayerAdapter>(
     private val lifeCycleScope: CoroutineScope,
     private val activity: Activity,
     impl: T,
+    private val onPlayPauseAction: (action: PlayPauseAction) -> Boolean = { false },
     private val updateProgress: () -> Unit,
     private val chooseEpisode: () -> Unit = {}
 ) : PlaybackTransportControlGlue<T>(context, impl) {
@@ -99,6 +100,7 @@ class ProgressTransportControlGlue<T : PlayerAdapter>(
         when (action) {
             replayAction -> playerAdapter.seekTo(0L)
             episodeListAction -> chooseEpisode()
+            is PlayPauseAction -> if (!onPlayPauseAction(action)) super.onActionClicked(action)
             else -> super.onActionClicked(action)
         }
     }
@@ -146,9 +148,5 @@ class ProgressTransportControlGlue<T : PlayerAdapter>(
             return true
         }
         return super.onKey(v, keyCode, keyEvent)
-    }
-
-    companion object {
-        private val THIRTY_SECONDS = TimeUnit.SECONDS.toMillis(30)
     }
 }

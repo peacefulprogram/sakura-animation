@@ -28,8 +28,8 @@ class CategoryViewModel(
     private var rawCategoryGroups = emptyList<VideoCategoryGroup>()
 
     private val _categories =
-        MutableStateFlow<Resource<List<VideoCategoryGroup.NormalCategoryGroup>>>(Resource.Loading)
-    val categories: StateFlow<Resource<List<VideoCategoryGroup.NormalCategoryGroup>>>
+        MutableStateFlow<Resource<List<CategoryGroupWrapper>>>(Resource.Loading)
+    val categories: StateFlow<Resource<List<CategoryGroupWrapper>>>
         get() = _categories
 
     private val _selectedCategories = MutableStateFlow<Map<String, String>>(emptyMap())
@@ -46,6 +46,9 @@ class CategoryViewModel(
     private var queryCategories = emptyList<NamedValue<String>>()
 
     private val existsVideoIds = mutableSetOf<String>()
+
+    @Volatile
+    private var categoryRowNextId = 0
 
     init {
         loadCategories()
@@ -80,13 +83,18 @@ class CategoryViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             _categories.emit(Resource.Loading)
             try {
-                val displayCategories = mutableListOf<VideoCategoryGroup.NormalCategoryGroup>()
+                val displayCategories = mutableListOf<CategoryGroupWrapper>()
                 val categoryGroups = webPageRepository.getVideoCategories(sourceId)
                 val defaultValues = mutableMapOf<String, String>()
                 categoryGroups.forEach { group ->
                     when (group) {
                         is VideoCategoryGroup.NormalCategoryGroup -> {
-                            displayCategories.add(group)
+                            displayCategories.add(
+                                CategoryGroupWrapper(
+                                    id = categoryRowNextId++,
+                                    group = group
+                                )
+                            )
                             defaultValues[group.key] = group.defaultValue
                         }
 
@@ -97,7 +105,12 @@ class CategoryViewModel(
                                 group.categoriesProvider(it)
                             }
                             defaultValues[actualGroup.key] = actualGroup.defaultValue
-                            displayCategories.add(actualGroup)
+                            displayCategories.add(
+                                CategoryGroupWrapper(
+                                    id = categoryRowNextId++,
+                                    group = actualGroup
+                                )
+                            )
                         }
                     }
                 }
@@ -131,7 +144,7 @@ class CategoryViewModel(
 
     fun onUserSelect(key: String, value: String) {
         val newValues = mutableMapOf<String, String>()
-        val changedGroups = mutableMapOf<Int, VideoCategoryGroup.NormalCategoryGroup>()
+        val changedGroups = mutableMapOf<Int, CategoryGroupWrapper>()
         val oldValue = _userSelectedCategories.value
         rawCategoryGroups.forEachIndexed { index, group ->
             if (group is VideoCategoryGroup.DynamicCategoryGroup && group.dependsOnKey.contains(key)) {
@@ -146,7 +159,8 @@ class CategoryViewModel(
                             ?: newGroup.defaultValue
                     newValues[group.key] = newValue
                 }
-                changedGroups[index] = newGroup
+                changedGroups[index] =
+                    CategoryGroupWrapper(id = categoryRowNextId++, group = newGroup)
             } else {
                 newValues[group.key] = oldValue[group.key]!!
             }
@@ -177,5 +191,10 @@ class CategoryViewModel(
     }
 
 }
+
+data class CategoryGroupWrapper(
+    val id: Int,
+    val group: VideoCategoryGroup.NormalCategoryGroup
+)
 
 typealias ShouldRefresh = Boolean

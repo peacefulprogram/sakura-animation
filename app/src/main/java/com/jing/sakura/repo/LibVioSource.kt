@@ -159,7 +159,9 @@ class LibVioSource(private val okHttpClient: OkHttpClient) : AnimationSource {
             playerServerCache[playFrom] = playerServer
         }
         val playerHtml =
-            getRequest("$playerServer?url=$data&next=$nextLink&id=$animeId&nid=${cfg["nid"]}").bodyString()
+            getRequest("$playerServer?url=$data&next=$nextLink&id=$animeId&nid=${cfg["nid"]}") {
+                header("referer", "$BASE_URL/")
+            }.bodyString()
         val videoUrl = getStringVariableValue(html = playerHtml, variableName = "urls")
             ?: throw RuntimeException("未获取到视频链接")
         return Resource.Success(AnimationSource.VideoUrlResult(url = videoUrl))
@@ -335,7 +337,7 @@ class LibVioSource(private val okHttpClient: OkHttpClient) : AnimationSource {
         return AnimePageData(page = page, hasNextPage = hasNextPage(), animeList = videos)
     }
 
-    private fun getSubCategoriesOfType(type: String): List<VideoCategoryGroup.NormalCategoryGroup> {
+    private suspend fun getSubCategoriesOfType(type: String): List<VideoCategoryGroup.NormalCategoryGroup> {
         val doc = getRequest("/show/$type-----------.html").asDocument()
         return doc.select("#screenbox > ul").map { row ->
             val rowLabel = row.child(0).text().trim(':', ' ', '：')
@@ -444,7 +446,7 @@ class LibVioSource(private val okHttpClient: OkHttpClient) : AnimationSource {
         return currentIndex != -1 && currentIndex < pageEls.size - 4
     }
 
-    private fun getRequest(url: String, block: Request.Builder.() -> Unit = {}): Response =
+    private suspend fun getRequest(url: String, block: Request.Builder.() -> Unit = {}): Response =
         okHttpClient.newRequest(FunCDNHelper) {
             if (url.startsWith("http:") || url.startsWith("https:")) {
                 url(url)
@@ -452,7 +454,6 @@ class LibVioSource(private val okHttpClient: OkHttpClient) : AnimationSource {
                 url(BASE_URL + url)
             }
             get()
-            header("referer", "$BASE_URL/")
             block()
         }
 

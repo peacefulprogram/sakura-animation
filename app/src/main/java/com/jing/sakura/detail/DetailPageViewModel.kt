@@ -10,6 +10,7 @@ import com.jing.sakura.room.VideoHistoryDao
 import com.jing.sakura.room.VideoHistoryEntity
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,12 +33,15 @@ class DetailPageViewModel constructor(
     val latestProgress: StateFlow<Resource<VideoHistoryEntity>>
         get() = _latestProgress
 
+    private var loadDataJob: Job? = null
+
     init {
         loadData()
     }
 
     fun loadData() {
-        viewModelScope.launch(Dispatchers.IO) {
+        loadDataJob?.cancel()
+        loadDataJob = viewModelScope.launch(Dispatchers.IO) {
             _detailPageData.emit(Resource.Loading)
             try {
                 val historyJob = async {

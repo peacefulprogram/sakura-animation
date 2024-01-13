@@ -2,6 +2,9 @@ package com.jing.sakura.extend
 
 import android.util.Log
 import android.webkit.CookieManager
+import kotlinx.coroutines.CompletableDeferred
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
@@ -11,72 +14,72 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
+import java.io.IOException
 import java.nio.charset.Charset
 
-fun OkHttpClient.newRequest(
+suspend fun OkHttpClient.executeWithCoroutine(request: Request): Response {
+    val def = CompletableDeferred<Result<Response>>()
+    newCall(request).enqueue(object : Callback {
+        override fun onFailure(call: Call, e: IOException) {
+            def.complete(Result.failure(e))
+        }
+
+        override fun onResponse(call: Call, response: Response) {
+            def.complete(Result.success(response))
+        }
+    })
+    return def.await().getOrThrow()
+}
+
+suspend fun OkHttpClient.newRequest(
     webViewCookieHelper: WebViewCookieHelper? = null,
     block: Request.Builder.() -> Unit
 ): Response {
     val req = Request.Builder()
         .apply(block)
         .build()
-    val resp = newCall(req).execute()
+    val resp = executeWithCoroutine(req)
     if (webViewCookieHelper == null || !webViewCookieHelper.shouldIntercept(resp)) {
         return resp
     }
     resp.close()
-    val cookieJar = this.cookieJar
-    // 删除已有cookie
-    if (cookieJar is AndroidCookieJar) {
-        cookieJar.remove(req.url, listOf(webViewCookieHelper.cookieName))
-    } else {
-        val oldCookies = cookieJar.loadForRequest(req.url)
-        if (oldCookies.isNotEmpty()) {
-            oldCookies.map {
-                Cookie.Builder()
-                    .domain(it.domain)
-                    .name(it.name)
-                    .path(it.path)
-                    .expiresAt(0L)
-                    .build()
-            }.let { cookieJar.saveFromResponse(req.url, it) }
-        }
-    }
-    val success = try {
+    try {
         webViewCookieHelper.obtainCookieThroughWebView(resp.request)
     } catch (ex: Exception) {
         Log.e("OkHttpClient.newRequest", "WebViewCookieHelper检测错误, ${ex.message}", ex)
-        false
     }
-    if (!success) {
-        throw RuntimeException("cloud flare 检测失败")
-    }
-    return newCall(Request.Builder().apply(block).build()).execute()
+    return executeWithCoroutine(Request.Builder().apply(block).build())
 }
 
 
-fun OkHttpClient.getHtml(url: String, requestHandler: Request.Builder.() -> Unit = {}): String =
-    newRequest {
+suspend fun OkHttpClient.getHtml(
+    url: String,
+    webViewCookieHelper: WebViewCookieHelper? = null,
+    requestHandler: Request.Builder.() -> Unit = {}
+): String =
+    newRequest(webViewCookieHelper = webViewCookieHelper) {
         get()
         url(url)
         requestHandler()
     }.bodyString()
 
 
-fun OkHttpClient.getDocument(
+suspend fun OkHttpClient.getDocument(
     url: String,
+    webViewCookieHelper: WebViewCookieHelper? = null,
     requestHandler: Request.Builder.() -> Unit = {}
-): Document = newRequest {
+): Document = newRequest(webViewCookieHelper = webViewCookieHelper) {
     get()
     url(url)
     requestHandler()
 }.asDocument()
 
 
-
-
-fun OkHttpClient.newGetRequest(block: Request.Builder.() -> Unit): Response {
-    return newRequest {
+suspend fun OkHttpClient.newGetRequest(
+    webViewCookieHelper: WebViewCookieHelper? = null,
+    block: Request.Builder.() -> Unit
+): Response {
+    return newRequest(webViewCookieHelper = webViewCookieHelper) {
         block()
         get()
     }
@@ -94,7 +97,7 @@ fun Response.bodyString(charset: Charset = Charsets.UTF_8): String {
     }
     return this.use {
         val body = it.body ?: throw RuntimeException("请求${request.url}失败,响应体为空")
-        body.string()
+        body.byteString().string(charset)
     }
 }
 
@@ -123,7 +126,7 @@ class AndroidCookieJar : CookieJar {
         }
     }
 
-    fun remove(url: HttpUrl, cookieNames: List<String>? = null, maxAge: Int = -1): Int {
+    fun remove(url: HttpUrl, cookieNames: List<String>? = null, maxAge: Int = 0): Int {
         val urlString = url.toString()
         val cookies = manager.getCookie(urlString) ?: return 0
 

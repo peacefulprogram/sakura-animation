@@ -113,7 +113,7 @@ class ChangZhangSource(val okHttpClient: OkHttpClient) : AnimationSource {
     }
 
     @OptIn(ExperimentalEncodingApi::class)
-    private fun getVideoPlainUrlFromHtml(html: String): String {
+    private suspend fun getVideoPlainUrlFromHtml(html: String): String {
         val iframeSrc = Jsoup.parse(html).selectFirst(".videoplay > iframe")?.attr("src") ?: ""
         if (iframeSrc.isNotEmpty()) {
             return getVideoUrlFromIframe(iframeSrc)
@@ -168,7 +168,7 @@ class ChangZhangSource(val okHttpClient: OkHttpClient) : AnimationSource {
 
     }
 
-    private fun getVideoUrlFromIframe(iframeSrc: String): String {
+    private suspend fun getVideoUrlFromIframe(iframeSrc: String): String {
         val resp = okHttpClient.newGetRequest {
             url(iframeSrc)
             header("referer", "https://www.czzy88.com/")

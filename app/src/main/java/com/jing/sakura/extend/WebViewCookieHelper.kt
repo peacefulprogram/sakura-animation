@@ -1,18 +1,23 @@
 package com.jing.sakura.extend
 
 import android.annotation.SuppressLint
+import android.util.Log
 import android.webkit.CookieManager
 import android.webkit.WebSettings
 import android.webkit.WebView
 import androidx.core.content.ContextCompat
 import androidx.webkit.WebViewClientCompat
-import com.jing.sakura.BuildConfig
 import com.jing.sakura.SakuraApplication
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import okhttp3.Cookie
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 import okhttp3.Response
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.seconds
 
 abstract class WebViewCookieHelper {
 
@@ -24,53 +29,48 @@ abstract class WebViewCookieHelper {
 
     abstract fun shouldIntercept(response: Response): Boolean
 
-    fun obtainCookieThroughWebView(originalRequest: Request): Boolean {
-
-        val latch = CountDownLatch(1)
-
-        var webview: WebView? = null
-
+    suspend fun obtainCookieThroughWebView(originalRequest: Request) {
         val origRequestUrl = originalRequest.url.toString()
-        val cfCookie: ObjectRef<Cookie?> = ObjectRef(null)
-        mainExecutor.execute {
-            notice?.let {
-                SakuraApplication.context.showLongToast(it)
-            }
-            webview = createWebView(originalRequest)
+        val cookieDef = CompletableDeferred<Unit>()
+        cookieManager.removeCookies(origRequestUrl)
+        val webView = withContext(Dispatchers.Main) {
+            createWebView(originalRequest).apply {
+                webViewClient = object : WebViewClientCompat() {
 
-            webview?.webViewClient = object : WebViewClientCompat() {
-
-                override fun onPageFinished(view: WebView, url: String) {
-
-                    val cookieStr = cookieManager.getCookie(origRequestUrl)
-                    if (cookieStr?.isNotEmpty() == true) {
-                        cookieStr.split(';')
-                            .map { Cookie.parse(originalRequest.url, it) }
-                            .find { it?.name == cookieName }
-                            ?.let { cfCookie.offer(it) }
-                    }
-                    if (url == origRequestUrl && cfCookie.get() != null) {
-                        latch.countDown()
+                    override fun onPageFinished(view: WebView?, url: String) {
+                        Log.d(TAG, "onPageFinished: $url")
+                        if (url != origRequestUrl) {
+                            return
+                        }
+                        val cookieStr = cookieManager.getCookie(origRequestUrl)
+                        Log.d(TAG, "onPageFinished: $cookieStr")
+                        if (cookieStr?.isNotEmpty() == true) {
+                            val found = cookieStr.split(";")
+                                .any {
+                                    val ck = Cookie.parse(originalRequest.url, it)
+                                    ck != null && ck.name == cookieName && ck.value.isNotEmpty()
+                                }
+                            if (found) {
+                                cookieDef.complete(Unit)
+                            }
+                        }
                     }
                 }
-            }
-
-            webview?.loadUrl(origRequestUrl)
-        }
-
-        latch.await(timeoutSeconds, TimeUnit.SECONDS)
-
-        mainExecutor.execute {
-
-            webview?.run {
-                stopLoading()
-                destroy()
-            }
-            if (BuildConfig.DEBUG) {
-                SakuraApplication.context.showLongToast("cookie: ${cfCookie.get()}")
+                loadUrl(origRequestUrl)
             }
         }
-        return cfCookie.get() != null
+        try {
+            withTimeout(timeoutSeconds.seconds) {
+                cookieDef.await()
+            }
+        } finally {
+            mainExecutor.execute {
+                with(webView) {
+                    stopLoading()
+                    destroy()
+                }
+            }
+        }
     }
 
 
@@ -81,6 +81,27 @@ abstract class WebViewCookieHelper {
         }
     }
 
+
+    private suspend fun CookieManager.removeCookies(url: String) {
+        val cookieStr = getCookie(url)?.takeIf { it.isNotEmpty() } ?: return
+        val httpUrl = url.toHttpUrl()
+        val cookies = cookieStr.split(";")
+            .asSequence()
+            .map { Cookie.parse(httpUrl, it)?.name }
+            .filterNotNull()
+            .map { "$it=; Max-Age=0" }
+            .toList()
+        val defList = List(cookies.size) { CompletableDeferred<Unit>() }
+        withContext(Dispatchers.Main) {
+            cookies.forEachIndexed { index, ck ->
+                setCookie(httpUrl.host, ck) {
+                    defList[index].complete(Unit)
+                }
+            }
+            flush()
+        }
+        defList.awaitAll()
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun WebView.setDefaultSettings() {
@@ -99,22 +120,10 @@ abstract class WebViewCookieHelper {
         }
     }
 
-    private class ObjectRef<T>(initialValue: T) {
-        @Volatile
-        private var value: T = initialValue
-
-        fun offer(value: T) {
-            this.value = value
-        }
-
-        fun get(): T {
-            return value
-        }
-    }
-
     companion object {
         private val mainExecutor by lazy { ContextCompat.getMainExecutor(SakuraApplication.context) }
 
+        private const val TAG = "WebViewCookieHelper"
 
         private val cookieManager by lazy {
             CookieManager.getInstance().apply { setAcceptCookie(true) }

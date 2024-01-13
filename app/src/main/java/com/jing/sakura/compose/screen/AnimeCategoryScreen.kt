@@ -4,12 +4,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -22,6 +22,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -46,8 +48,6 @@ import androidx.tv.foundation.lazy.list.TvLazyColumn
 import androidx.tv.foundation.lazy.list.TvLazyRow
 import androidx.tv.foundation.lazy.list.rememberTvLazyListState
 import androidx.tv.material3.ExperimentalTvMaterial3Api
-import androidx.tv.material3.FilterChip
-import androidx.tv.material3.FilterChipDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.ProvideTextStyle
 import androidx.tv.material3.Text
@@ -59,8 +59,8 @@ import com.jing.sakura.compose.common.VideoCard
 import com.jing.sakura.data.AnimeData
 import com.jing.sakura.data.Resource
 import com.jing.sakura.detail.DetailActivity
+import com.jing.sakura.home.CategoryGroupWrapper
 import com.jing.sakura.home.CategoryViewModel
-import com.jing.sakura.repo.VideoCategoryGroup
 import kotlinx.coroutines.launch
 
 @Composable
@@ -118,7 +118,7 @@ fun AnimeCategoryScreen(viewModel: CategoryViewModel) {
     }
     if (showCategoryDialog) {
         VideoCategoryDialog(
-            categoryGroups = (categoriesResource as Resource.Success<List<VideoCategoryGroup.NormalCategoryGroup>>).data,
+            categoryGroups = (categoriesResource as Resource.Success<List<CategoryGroupWrapper>>).data,
             selectedValue = selectedValue,
             onSelect = { key, value ->
                 viewModel.onUserSelect(key, value)
@@ -229,7 +229,7 @@ fun VideoGrid(
 @OptIn(ExperimentalTvMaterial3Api::class, ExperimentalTvFoundationApi::class)
 @Composable
 fun VideoCategoryDialog(
-    categoryGroups: List<VideoCategoryGroup.NormalCategoryGroup>,
+    categoryGroups: List<CategoryGroupWrapper>,
     selectedValue: Map<String, String>,
     onSelect: (key: String, value: String) -> Unit,
     onApply: () -> Unit
@@ -242,7 +242,7 @@ fun VideoCategoryDialog(
         false
     }
     val groupTitleWidth = remember(categoryGroups) {
-        val maxTitleLength = categoryGroups.maxOfOrNull { it.name.length } ?: 4
+        val maxTitleLength = categoryGroups.maxOfOrNull { it.group.name.length } ?: 4
         fontSizeDpValue * (maxTitleLength + 1)
     }
     AlertDialog(
@@ -260,15 +260,15 @@ fun VideoCategoryDialog(
                     content = {
                         items(
                             count = categoryGroups.size,
-                            key = { categoryGroups[it].key }) { groupIndex ->
-                            val categoryGroup = categoryGroups[groupIndex]
+                            key = { categoryGroups[it].id }) { groupIndex ->
+                            val categoryGroup = categoryGroups[groupIndex].group
                             val selectedIndex = remember {
                                 categoryGroup.categories.indexOfFirst { it.value == selectedValue[categoryGroup.key] }
                             }
                             val rowState = rememberTvLazyListState(selectedIndex)
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                horizontalArrangement = Arrangement.spacedBy(3.dp)
                             ) {
                                 Text(
                                     text = "${categoryGroup.name}:",
@@ -283,8 +283,6 @@ fun VideoCategoryDialog(
                                 ) {
                                     TvLazyRow(
                                         state = rowState,
-                                        horizontalArrangement = Arrangement.spacedBy(5.dp),
-                                        contentPadding = PaddingValues(3.dp),
                                         pivotOffsets = PivotOffsets(0f),
                                         content = {
                                             items(
@@ -292,18 +290,15 @@ fun VideoCategoryDialog(
                                                 key = { categoryGroup.categories[it].label }) { categoryIndex ->
                                                 val category =
                                                     categoryGroup.categories[categoryIndex]
-                                                FilterChip(
+                                                FocusableFilterChip(
+                                                    text = category.label,
                                                     selected = selectedValue[categoryGroup.key] == category.value,
-                                                    onClick = {
-                                                        onSelect(
-                                                            categoryGroup.key,
-                                                            category.value
-                                                        )
-                                                    },
                                                     modifier = if (categoryIndex == selectedIndex) Modifier.initiallyFocused() else Modifier.restorableFocus(),
-                                                    scale = FilterChipDefaults.scale(focusedScale = 1f)
                                                 ) {
-                                                    Text(text = category.label)
+                                                    onSelect(
+                                                        categoryGroup.key,
+                                                        category.value
+                                                    )
                                                 }
                                             }
                                         }
@@ -324,4 +319,29 @@ fun VideoCategoryDialog(
                 )
             }
         })
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalTvMaterial3Api::class)
+@Composable
+fun FocusableFilterChip(
+    text: String,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {}
+) {
+    var focused by remember {
+        mutableStateOf(false)
+    }
+    androidx.compose.material3.FilterChip(selected = selected, onClick = onClick, label = {
+        Text(text = text)
+    }, border = if (focused) androidx.compose.material3.FilterChipDefaults.filterChipBorder(
+        borderColor = MaterialTheme.colorScheme.border,
+        selectedBorderColor = MaterialTheme.colorScheme.border,
+        borderWidth = 2.dp,
+        selectedBorderWidth = 2.dp
+    ) else androidx.compose.material3.FilterChipDefaults.filterChipBorder(
+        borderColor = Color.Transparent, selectedBorderColor = Color.Transparent
+    ), modifier = modifier.onFocusChanged {
+        focused = it.isFocused || it.hasFocus
+    })
 }
