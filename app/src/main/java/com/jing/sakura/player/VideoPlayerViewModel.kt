@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.regex.Pattern
 
 
@@ -59,6 +58,8 @@ class VideoPlayerViewModel(
     @Volatile
     private var playingEpisode: AnimePlayListEpisode? = null
 
+    private var loadVideoJob: Pair<AnimePlayListEpisode, Job>? = null
+
 
     init {
         viewModelScope.launch {
@@ -85,10 +86,15 @@ class VideoPlayerViewModel(
         }
     }
 
-    private suspend fun fetchVideoUrl(episode: AnimePlayListEpisode) {
-        _videoUrl.emit(Resource.Loading)
-        withContext(Dispatchers.IO) {
+    private fun fetchVideoUrl(episode: AnimePlayListEpisode) {
+        val job = loadVideoJob
+        if (job != null && job.first == episode) {
+            return
+        }
+        job?.second?.cancel()
+        loadVideoJob = episode to viewModelScope.launch(Dispatchers.IO) {
             try {
+                _videoUrl.emit(Resource.Loading)
                 val resp = repository.fetchVideoUrl(
                     episode.episodeId,
                     animeId = anime.animeId,
@@ -121,6 +127,8 @@ class VideoPlayerViewModel(
                 }
                 Log.e(TAG, "fetchVideoUrl: ${e.message}", e)
                 _videoUrl.emit(Resource.Error(e.message ?: ""))
+            } finally {
+                loadVideoJob = null
             }
         }
     }
@@ -160,7 +168,8 @@ class VideoPlayerViewModel(
     }
 
     fun playNextEpisodeIfExists() {
-        val nextIndex = findNextEpisodeIndex() ?: return
+        val nextIndex = findNextEpisodeIndex()
+        if (nextIndex == null || _videoUrl.value !is Resource.Success) return
         playEpisodeOfIndex(nextIndex)
     }
 
@@ -202,5 +211,9 @@ class VideoPlayerViewModel(
     fun onPlayPositionChange(currentPosition: Long, duration: Long) {
         this.currentPlayPosition = currentPosition
         this.videoDuration = duration
+    }
+
+    fun retryLoadEpisode() {
+        fetchVideoUrl(playList[_playIndex.value])
     }
 }

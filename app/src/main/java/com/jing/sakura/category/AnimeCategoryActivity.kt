@@ -18,7 +18,7 @@ import com.jing.sakura.R
 import com.jing.sakura.compose.screen.AnimeCategoryScreen
 import com.jing.sakura.compose.theme.SakuraTheme
 import com.jing.sakura.home.CategoryViewModel
-import org.koin.android.ext.android.get
+import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
 
 class AnimeCategoryActivity : ComponentActivity() {
@@ -26,7 +26,7 @@ class AnimeCategoryActivity : ComponentActivity() {
     @OptIn(ExperimentalTvMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val viewModel: CategoryViewModel = get { parametersOf(intent.getStringExtra("s")) }
+        val viewModel: CategoryViewModel by viewModel { parametersOf(intent.getStringExtra("s")) }
         setContent {
             SakuraTheme {
                 Box(

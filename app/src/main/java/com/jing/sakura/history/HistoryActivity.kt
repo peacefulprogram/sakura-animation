@@ -18,14 +18,14 @@ import androidx.tv.material3.MaterialTheme
 import com.jing.sakura.R
 import com.jing.sakura.compose.screen.VideoHistoryScreen
 import com.jing.sakura.compose.theme.SakuraTheme
-import org.koin.android.ext.android.get
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class HistoryActivity : ComponentActivity() {
 
     @OptIn(ExperimentalTvMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val viewModel = get<HistoryViewModel>()
+        val viewModel by viewModel<HistoryViewModel>()
         setContent {
             SakuraTheme {
                 Box(

@@ -10,6 +10,7 @@ import androidx.core.graphics.drawable.toDrawable
 import androidx.leanback.app.ProgressBarManager
 import androidx.leanback.app.VideoSupportFragment
 import androidx.leanback.app.VideoSupportFragmentGlueHost
+import androidx.leanback.widget.PlaybackControlsRow.PlayPauseAction
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -31,12 +32,18 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import org.koin.android.ext.android.get
+import org.koin.androidx.viewmodel.ext.android.activityViewModel
 import org.koin.core.parameter.parametersOf
 import org.koin.core.qualifier.qualifier
 
 class AnimePlayerFragment : VideoSupportFragment() {
 
-    private lateinit var viewModel: VideoPlayerViewModel
+    private val viewModel: VideoPlayerViewModel by activityViewModel {
+        val intentArg = requireActivity().intent.getSerializableExtra(
+            "video",
+        ) as NavigateToPlayerArg
+        parametersOf(intentArg)
+    }
     private var exoplayer: ExoPlayer? = null
 
     private var glue: ProgressTransportControlGlue<LeanbackPlayerAdapter>? = null
@@ -46,15 +53,26 @@ class AnimePlayerFragment : VideoSupportFragment() {
     private val okHttpClient: OkHttpClient =
         get(qualifier = qualifier(SakuraApplication.KoinOkHttpClient.MEDIA))
 
+    private val playerListener = object : Listener {
+
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            if (playbackState == ExoPlayer.STATE_ENDED) {
+                viewModel.playNextEpisodeIfExists()
+            }
+        }
+
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            if (isPlaying) {
+                viewModel.startSaveHistory()
+            } else {
+                viewModel.stopSaveHistory()
+            }
+        }
+
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val intentArg = requireActivity().intent.getSerializableExtra(
-            "video",
-        ) as NavigateToPlayerArg
-        viewModel = get { parametersOf(intentArg) }
-        viewModel.init(
-
-        )
         requireActivity().window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         // Create the MediaSession that will be used throughout the lifecycle of this Fragment.
     }
@@ -143,25 +161,12 @@ class AnimePlayerFragment : VideoSupportFragment() {
         ExoPlayer.Builder(requireContext()).build().apply {
             prepareGlue(this)
             playWhenReady = true
-            addListener(object : Listener {
-                override fun onPlaybackStateChanged(playbackState: Int) {
-                    if (playbackState == ExoPlayer.STATE_ENDED) {
-                        viewModel.playNextEpisodeIfExists()
-                    }
-                }
-
-                override fun onIsPlayingChanged(isPlaying: Boolean) {
-                    if (isPlaying) {
-                        viewModel.startSaveHistory()
-                    } else {
-                        viewModel.stopSaveHistory()
-                    }
-                }
-            })
+            addListener(playerListener)
         }
 
     private fun destroyPlayer() {
         exoplayer?.let {
+            it.removeListener(playerListener)
             // Pause the player to notify listeners before it is released.
             it.pause()
             it.release()
@@ -180,6 +185,14 @@ class AnimePlayerFragment : VideoSupportFragment() {
                 localExoplayer,
                 PLAYER_UPDATE_INTERVAL_MILLIS.toInt()
             ),
+            onPlayPauseAction = { action ->
+                if (action.index == PlayPauseAction.INDEX_PLAY && viewModel.videoUrl.value is Resource.Error) {
+                    viewModel.retryLoadEpisode()
+                    true
+                } else {
+                    false
+                }
+            },
             updateProgress = {
                 viewModel.onPlayPositionChange(
                     localExoplayer.currentPosition,
@@ -204,7 +217,6 @@ class AnimePlayerFragment : VideoSupportFragment() {
         // such as the smoothness of the progress bar and time stamp labels updating. This value can
         // be tweaked for better performance.
         private const val PLAYER_UPDATE_INTERVAL_MILLIS = 100L
-
     }
 
 

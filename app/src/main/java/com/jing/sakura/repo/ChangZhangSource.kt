@@ -37,10 +37,14 @@ class ChangZhangSource(val okHttpClient: OkHttpClient) : AnimationSource {
         val doc = okHttpClient.newGetRequest {
             url(BASE_URL)
         }.asDocument()
-        val series = doc.getElementsByClass("mi_btcon").map { groupEl ->
-            val name = groupEl.selectFirst(".bt_tit a")!!.text().trim()
+        val series = mutableListOf<NamedValue<List<AnimeData>>>()
+        doc.getElementsByClass("mi_btcon").forEach { groupEl ->
+            val name = groupEl.selectFirst(".bt_tit a")?.text()?.trim()
             val videos = groupEl.select(".bt_img > ul > li").map { it.parseAnime() }
-            NamedValue(name, value = videos)
+            if (name != null && videos.isNotEmpty()) {
+                series.add(NamedValue(name, value = videos))
+            }
+
         }
         return HomePageData(seriesList = series)
     }

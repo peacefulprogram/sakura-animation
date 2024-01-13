@@ -17,7 +17,7 @@ import androidx.tv.material3.MaterialTheme
 import com.jing.sakura.R
 import com.jing.sakura.compose.screen.SearchResultScreen
 import com.jing.sakura.compose.theme.SakuraTheme
-import org.koin.android.ext.android.get
+import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
 
 class SearchResultActivity : ComponentActivity() {
@@ -27,7 +27,7 @@ class SearchResultActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val kw = intent.getStringExtra("kw")!!
         val sourceId = intent.getStringExtra("source")!!
-        val viewModel = get<SearchResultViewModel> { parametersOf(kw, sourceId) }
+        val viewModel by viewModel<SearchResultViewModel> { parametersOf(kw, sourceId) }
         setContent {
             SakuraTheme {
                 Box(

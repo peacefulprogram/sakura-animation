@@ -6,6 +6,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -53,6 +55,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.tv.foundation.ExperimentalTvFoundationApi
+import androidx.tv.foundation.PivotOffsets
 import androidx.tv.foundation.lazy.grid.TvGridCells
 import androidx.tv.foundation.lazy.grid.TvGridItemSpan
 import androidx.tv.foundation.lazy.grid.TvLazyVerticalGrid
@@ -76,9 +79,11 @@ import com.jing.sakura.R
 import com.jing.sakura.compose.common.ErrorTip
 import com.jing.sakura.compose.common.FocusGroup
 import com.jing.sakura.compose.common.Loading
+import com.jing.sakura.compose.common.Value
 import com.jing.sakura.compose.common.VideoCard
 import com.jing.sakura.data.AnimeData
 import com.jing.sakura.data.AnimeDetailPageData
+import com.jing.sakura.data.AnimePlayList
 import com.jing.sakura.data.AnimePlayListEpisode
 import com.jing.sakura.data.Resource
 import com.jing.sakura.detail.DetailActivity
@@ -86,9 +91,10 @@ import com.jing.sakura.detail.DetailPageViewModel
 import com.jing.sakura.extend.secondsToMinuteAndSecondText
 import com.jing.sakura.player.NavigateToPlayerArg
 import com.jing.sakura.player.PlaybackActivity
+import com.jing.sakura.room.VideoHistoryEntity
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalTvMaterial3Api::class)
+@OptIn(ExperimentalTvMaterial3Api::class, ExperimentalTvFoundationApi::class)
 @Composable
 fun DetailScreen(viewModel: DetailPageViewModel) {
     val videoDetailResource = viewModel.detailPageData.collectAsState().value
@@ -120,28 +126,103 @@ fun DetailScreen(viewModel: DetailPageViewModel) {
         mutableStateOf(false)
     }
 
-    val playlists = remember(reverseEpisode) {
-        if (reverseEpisode) {
-            videoDetail.playLists.map { it.copy(episodeList = it.episodeList.reversed()) }
-        } else {
-            videoDetail.playLists
+    val currentFocusedEpisodeId = remember {
+        Value("")
+    }
+
+    val videoHistory = viewModel.latestProgress.collectAsState().value.getOrNull()
+
+    val nextPlayListId = remember {
+        Value(0)
+    }
+
+    val playlists =
+        remember(reverseEpisode, videoHistory?.episodeId) {
+            if (reverseEpisode) {
+                videoDetail.playLists.map {
+                    PlayListWrapper(
+                        id = nextPlayListId.value++,
+                        playlist = it.copy(episodeList = it.episodeList.reversed())
+                    )
+                }
+            } else {
+                videoDetail.playLists.map {
+                    PlayListWrapper(
+                        id = nextPlayListId.value++,
+                        playlist = it
+                    )
+                }
+            }
+        }
+
+    val focusedEpisodeIndex = remember(videoHistory?.episodeId) {
+        val episodeId = videoHistory?.episodeId
+        var lastPlayPosition = 0 to 0
+        if (episodeId != null) {
+            out@ for ((playListIndex, playList) in playlists.withIndex()) {
+                for ((episodeIndex, episode) in playList.playlist.episodeList.withIndex()) {
+                    if (episodeId == episode.episodeId) {
+                        lastPlayPosition = playListIndex to episodeIndex
+                        break@out
+                    }
+                }
+            }
+        }
+        Value(MutableList(videoDetail.playLists.size) { if (it == lastPlayPosition.first) lastPlayPosition.second else 0 })
+    }
+
+    // 切换正序/倒序排序时, 更新索引
+    val changeFocusedEpisodeIndexForReversed = {
+        videoDetail.playLists.forEachIndexed { index, _ ->
+            focusedEpisodeIndex.value[index] = 0
         }
     }
+
+    // 正序/倒序按钮
+    val reverseFocusRequester = remember {
+        FocusRequester()
+    }
+    val shouldFocusReverseButton = remember {
+        Value(false)
+    }
+
+    // 进入播放页,返回后恢复焦点
+    val restoreEpisodeFocusRequester = remember {
+        FocusRequester()
+    }
+    val restoreEpisodePosition = remember {
+        Value(-1 to -1)
+    }
+
+
     TvLazyColumn(
         modifier = Modifier.fillMaxSize(), content = {
             item {
-                VideoInfoRow(videoDetail = videoDetail, viewModel = viewModel)
+                VideoInfoRow(
+                    videoDetail = videoDetail,
+                    playHistory = videoHistory
+                ) {
+                    viewModel.loadData()
+                }
             }
-            items(count = playlists.size, key = { playlists[it].name }) { playlistIndex ->
-                val playlist = playlists[playlistIndex]
-                val initiallyFocusedIndex =
-                    if (playlistIndex == videoDetail.lastPlayEpisodePosition.first) videoDetail.lastPlayEpisodePosition.second else 0
+            items(
+                count = playlists.size,
+                key = { playlists[it].id }
+            ) { playlistIndex ->
+                val playlist = playlists[playlistIndex].playlist
+                val initiallyFocusedIndex = focusedEpisodeIndex.value[playlistIndex]
                 val listState =
                     rememberTvLazyListState(initialFirstVisibleItemIndex = initiallyFocusedIndex)
                 PlayListRow(
                     episodes = playlist.episodeList,
                     initiallyFocusedIndex = initiallyFocusedIndex,
                     listState = listState,
+                    onEpisodeFocused = { epIndex, ep ->
+                        focusedEpisodeIndex.value[playlistIndex] = epIndex
+                        currentFocusedEpisodeId.value = ep.episodeId
+                    },
+                    restoreFocusEpIndex = if (restoreEpisodePosition.value.first == playlistIndex) restoreEpisodePosition.value.second else -1,
+                    restoreFocusRequester = restoreEpisodeFocusRequester,
                     title = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
@@ -149,35 +230,49 @@ fun DetailScreen(viewModel: DetailPageViewModel) {
                             )
                             if (playlistIndex == 0) {
                                 Text(text = " | ")
-                                Surface(
-                                    onClick = {
-                                        reverseEpisode = !reverseEpisode
-                                    },
-                                    scale = ClickableSurfaceScale.None,
-                                    colors = ClickableSurfaceDefaults.colors(
-                                        focusedContainerColor = MaterialTheme.colorScheme.surface
-                                    ),
-                                    shape = ClickableSurfaceDefaults.shape(shape = MaterialTheme.shapes.small),
-                                    border = ClickableSurfaceDefaults.border(
-                                        focusedBorder = Border(
-                                            BorderStroke(
-                                                2.dp, MaterialTheme.colorScheme.border
+                                FocusGroup(modifier = Modifier.weight(1f)) {
+                                    Surface(
+                                        onClick = {
+                                            changeFocusedEpisodeIndexForReversed()
+                                            shouldFocusReverseButton.value = true
+                                            reverseEpisode = !reverseEpisode
+                                        },
+                                        scale = ClickableSurfaceScale.None,
+                                        colors = ClickableSurfaceDefaults.colors(
+                                            focusedContainerColor = MaterialTheme.colorScheme.surface
+                                        ),
+                                        shape = ClickableSurfaceDefaults.shape(shape = MaterialTheme.shapes.small),
+                                        border = ClickableSurfaceDefaults.border(
+                                            focusedBorder = Border(
+                                                BorderStroke(
+                                                    2.dp, MaterialTheme.colorScheme.border
+                                                )
                                             )
+                                        ),
+                                        modifier = Modifier
+                                            .focusRequester(reverseFocusRequester)
+                                            .initiallyFocused()
+                                    ) {
+                                        Text(
+                                            text = if (reverseEpisode) "倒序" else "正序",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            modifier = Modifier.padding(8.dp, 4.dp)
                                         )
-                                    ),
-                                ) {
-                                    Text(
-                                        text = if (reverseEpisode) "倒序" else "正序",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        modifier = Modifier.padding(8.dp, 4.dp)
-                                    )
+                                    }
+                                }
+                            }
+                            LaunchedEffect(reverseFocusRequester) {
+                                if (shouldFocusReverseButton.value) {
+                                    shouldFocusReverseButton.value = false
+                                    runCatching { reverseFocusRequester.requestFocus() }
                                 }
                             }
                         }
                     }) { epIndex, _ ->
-
+                    restoreEpisodePosition.value = playlistIndex to epIndex
                     PlaybackActivity.startActivity(
-                        context, NavigateToPlayerArg(
+                        context,
+                        NavigateToPlayerArg(
                             animeName = videoDetail.animeName,
                             animeId = videoDetail.animeId,
                             coverUrl = videoDetail.imageUrl,
@@ -187,15 +282,21 @@ fun DetailScreen(viewModel: DetailPageViewModel) {
                         )
                     )
                 }
-                LaunchedEffect(reverseEpisode) {
-                    listState.scrollToItem(0)
-                }
             }
             item {
                 RelativeVideoRow(videoDetail.otherAnimeList, viewModel.sourceId)
             }
         }, verticalArrangement = Arrangement.spacedBy(10.dp)
     )
+
+    LaunchedEffect(restoreEpisodePosition.value) {
+        if (restoreEpisodePosition.value.first >= 0 && restoreEpisodePosition.value.second >= 0) {
+            restoreEpisodePosition.value = -1 to -1
+            runCatching {
+                restoreEpisodeFocusRequester.requestFocus()
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalTvFoundationApi::class)
@@ -240,8 +341,11 @@ fun RelativeVideoRow(videos: List<AnimeData>, sourceId: String) {
 fun PlayListRow(
     episodes: List<AnimePlayListEpisode>,
     title: @Composable () -> Unit,
-    initiallyFocusedIndex: Int = 0,
     listState: TvLazyListState,
+    restoreFocusRequester: FocusRequester,
+    restoreFocusEpIndex: Int,
+    initiallyFocusedIndex: Int = 0,
+    onEpisodeFocused: (Int, AnimePlayListEpisode) -> Unit,
     onEpisodeClick: (Int, AnimePlayListEpisode) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -250,21 +354,35 @@ fun PlayListRow(
         FocusGroup {
             TvLazyRow(
                 state = listState,
+                pivotOffsets = PivotOffsets(0f),
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
                 content = {
                     items(count = episodes.size, key = { episodes[it].episodeId }) { epIndex ->
                         val ep = episodes[epIndex]
                         val modifier =
-                            if (epIndex == initiallyFocusedIndex)
+                            if (epIndex == initiallyFocusedIndex) {
                                 Modifier.initiallyFocused()
-                            else Modifier.restorableFocus()
-                        VideoTag(
-                            modifier = modifier.padding(horizontal = 2.dp),
+                            } else Modifier.restorableFocus()
+                        VideoEpisode(
+                            modifier = modifier
+                                .run {
+                                    if (restoreFocusEpIndex == epIndex) {
+                                        focusRequester(restoreFocusRequester)
+                                    } else {
+                                        this
+                                    }
+                                }
+                                .onFocusChanged {
+                                    if (it.hasFocus || it.isFocused) {
+                                        onEpisodeFocused(epIndex, ep)
+                                    }
+                                },
                             tagName = ep.episode
                         ) {
                             onEpisodeClick(epIndex, ep)
                         }
                     }
-                }, horizontalArrangement = Arrangement.spacedBy(5.dp)
+                }
             )
         }
     }
@@ -273,7 +391,11 @@ fun PlayListRow(
 
 @OptIn(ExperimentalTvMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun VideoInfoRow(videoDetail: AnimeDetailPageData, viewModel: DetailPageViewModel) {
+fun VideoInfoRow(
+    videoDetail: AnimeDetailPageData,
+    playHistory: VideoHistoryEntity? = null,
+    onCoverClick: () -> Unit = {}
+) {
     val focusRequester = remember {
         FocusRequester()
     }
@@ -288,7 +410,7 @@ fun VideoInfoRow(videoDetail: AnimeDetailPageData, viewModel: DetailPageViewMode
     ) {
         CompactCard(
             onClick = {
-                viewModel.loadData()
+                onCoverClick()
             },
             image = {
                 AsyncImage(
@@ -322,11 +444,9 @@ fun VideoInfoRow(videoDetail: AnimeDetailPageData, viewModel: DetailPageViewMode
                 maxLines = 1,
                 modifier = Modifier.basicMarquee()
             )
-            val playHistory = viewModel.latestProgress.collectAsState().value
-            if (playHistory is Resource.Success) {
-                val his = playHistory.data
+            if (playHistory != null) {
                 Text(
-                    text = "上次播放到${his.lastEpisodeName} ${(his.lastPlayTime / 1000).secondsToMinuteAndSecondText()}/${(his.videoDuration / 1000).secondsToMinuteAndSecondText()}",
+                    text = "上次播放到${playHistory.lastEpisodeName} ${(playHistory.lastPlayTime / 1000).secondsToMinuteAndSecondText()}/${(playHistory.videoDuration / 1000).secondsToMinuteAndSecondText()}",
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -446,22 +566,33 @@ fun VideoInfoRow(videoDetail: AnimeDetailPageData, viewModel: DetailPageViewMode
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-fun VideoTag(tagName: String, modifier: Modifier = Modifier, onClick: () -> Unit = {}) {
+fun VideoEpisode(tagName: String, modifier: Modifier = Modifier, onClick: () -> Unit = {}) {
+    var focused by remember {
+        mutableStateOf(false)
+    }
     Surface(
-        modifier = modifier,
+        modifier = modifier
+            .onFocusChanged {
+                focused = it.isFocused || it.hasFocus
+            }
+            .run {
+                if (focused) {
+                    border(
+                        2.dp,
+                        MaterialTheme.colorScheme.border,
+                        MaterialTheme.shapes.small
+                    )
+                } else {
+                    this
+                }
+            },
         colors = ClickableSurfaceDefaults.colors(
             containerColor = Color.White.copy(alpha = 0.2f),
             focusedContainerColor = Color.White.copy(alpha = 0.2f),
             pressedContainerColor = Color.White.copy(alpha = 0.2f)
         ),
         shape = ClickableSurfaceDefaults.shape(shape = MaterialTheme.shapes.small),
-        border = ClickableSurfaceDefaults.border(
-            focusedBorder = Border(
-                border = BorderStroke(
-                    width = 2.dp, color = MaterialTheme.colorScheme.border
-                ), shape = MaterialTheme.shapes.small
-            )
-        ),
+        border = ClickableSurfaceDefaults.border(),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1f),
         onClick = onClick
     ) {
@@ -469,5 +600,9 @@ fun VideoTag(tagName: String, modifier: Modifier = Modifier, onClick: () -> Unit
             modifier = Modifier.padding(6.dp, 3.dp), text = tagName, color = Color.White
         )
     }
-
 }
+
+private data class PlayListWrapper(
+    val id: Int,
+    val playlist: AnimePlayList
+)

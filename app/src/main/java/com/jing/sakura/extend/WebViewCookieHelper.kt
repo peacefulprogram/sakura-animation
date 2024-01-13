@@ -7,6 +7,7 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import androidx.core.content.ContextCompat
 import androidx.webkit.WebViewClientCompat
+import com.jing.sakura.BuildConfig
 import com.jing.sakura.SakuraApplication
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -34,16 +35,23 @@ abstract class WebViewCookieHelper {
         val cookieDef = CompletableDeferred<Unit>()
         cookieManager.removeCookies(origRequestUrl)
         val webView = withContext(Dispatchers.Main) {
+            notice?.let {
+                SakuraApplication.context.showLongToast(it)
+            }
             createWebView(originalRequest).apply {
                 webViewClient = object : WebViewClientCompat() {
 
                     override fun onPageFinished(view: WebView?, url: String) {
-                        Log.d(TAG, "onPageFinished: $url")
+                        if (BuildConfig.DEBUG) {
+                            Log.d(TAG, "onPageFinished: $url")
+                        }
                         if (url != origRequestUrl) {
                             return
                         }
                         val cookieStr = cookieManager.getCookie(origRequestUrl)
-                        Log.d(TAG, "onPageFinished: $cookieStr")
+                        if (BuildConfig.DEBUG) {
+                            Log.d(TAG, "onPageFinished: $cookieStr")
+                        }
                         if (cookieStr?.isNotEmpty() == true) {
                             val found = cookieStr.split(";")
                                 .any {

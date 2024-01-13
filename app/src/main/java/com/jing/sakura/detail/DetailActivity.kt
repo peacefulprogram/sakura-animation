@@ -18,7 +18,7 @@ import androidx.tv.material3.MaterialTheme
 import com.jing.sakura.R
 import com.jing.sakura.compose.screen.DetailScreen
 import com.jing.sakura.compose.theme.SakuraTheme
-import org.koin.android.ext.android.get
+import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
 
 class DetailActivity : ComponentActivity() {
@@ -28,7 +28,7 @@ class DetailActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val videoId = intent.getStringExtra("id")!!
         val sourceId = intent.getStringExtra("source")!!
-        val viewModel = get<DetailPageViewModel> { parametersOf(videoId, sourceId) }
+        val viewModel by viewModel<DetailPageViewModel> { parametersOf(videoId, sourceId) }
         setContent {
             SakuraTheme {
                 Box(
