@@ -224,13 +224,14 @@ fun DetailScreen(viewModel: DetailPageViewModel) {
                     restoreFocusEpIndex = if (restoreEpisodePosition.value.first == playlistIndex) restoreEpisodePosition.value.second else -1,
                     restoreFocusRequester = restoreEpisodeFocusRequester,
                     title = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = playlist.name, style = MaterialTheme.typography.titleMedium
-                            )
-                            if (playlistIndex == 0) {
-                                Text(text = " | ")
-                                FocusGroup(modifier = Modifier.weight(1f)) {
+                        FocusGroup(Modifier.fillMaxWidth()) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = playlist.name,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                if (playlistIndex == 0) {
+                                    Text(text = " | ")
                                     Surface(
                                         onClick = {
                                             changeFocusedEpisodeIndexForReversed()
@@ -260,11 +261,11 @@ fun DetailScreen(viewModel: DetailPageViewModel) {
                                         )
                                     }
                                 }
-                            }
-                            LaunchedEffect(reverseFocusRequester) {
-                                if (shouldFocusReverseButton.value) {
-                                    shouldFocusReverseButton.value = false
-                                    runCatching { reverseFocusRequester.requestFocus() }
+                                LaunchedEffect(reverseFocusRequester) {
+                                    if (shouldFocusReverseButton.value) {
+                                        shouldFocusReverseButton.value = false
+                                        runCatching { reverseFocusRequester.requestFocus() }
+                                    }
                                 }
                             }
                         }
@@ -351,7 +352,7 @@ fun PlayListRow(
     Column(modifier = Modifier.fillMaxWidth()) {
         title()
         Spacer(modifier = Modifier.height(5.dp))
-        FocusGroup {
+        FocusGroup(Modifier.fillMaxWidth()) {
             TvLazyRow(
                 state = listState,
                 pivotOffsets = PivotOffsets(0f),
@@ -597,7 +598,10 @@ fun VideoEpisode(tagName: String, modifier: Modifier = Modifier, onClick: () -> 
         onClick = onClick
     ) {
         Text(
-            modifier = Modifier.padding(6.dp, 3.dp), text = tagName, color = Color.White
+            modifier = Modifier
+                .padding(6.dp, 3.dp),
+            text = tagName,
+            color = Color.White,
         )
     }
 }

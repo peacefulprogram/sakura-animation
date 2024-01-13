@@ -31,7 +31,7 @@ class AueteSource(val okHttpClient: OkHttpClient) : AnimationSource {
             val videos = area.select(".threadlist > li").map { it.parseAnime() }
             NamedValue(areaName, videos)
         }
-        return HomePageData(series)
+        return HomePageData(sourceId = sourceId, series)
     }
 
     private fun Element.parseAnime(): AnimeData {

@@ -61,6 +61,7 @@ class SakuraSource(private val okHttpClient: OkHttpClient) : AnimationSource {
             seriesList.add(NamedValue(title, seriesData))
         }
         return HomePageData(
+            sourceId = sourceId,
             seriesList = seriesList
         )
     }

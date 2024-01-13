@@ -60,7 +60,7 @@ class WedmSource(
                 )
             }
         }
-        return HomePageData(animeSeries)
+        return HomePageData(sourceId = sourceId, animeSeries)
     }
 
     override suspend fun fetchDetailPage(animeId: String): AnimeDetailPageData {

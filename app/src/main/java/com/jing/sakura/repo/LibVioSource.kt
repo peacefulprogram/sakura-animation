@@ -57,7 +57,7 @@ class LibVioSource(private val okHttpClient: OkHttpClient) : AnimationSource {
                     ?.selectFirst("h3")?.text()?.trim() ?: "推荐视频"
             groups.add(NamedValue(groupName, videoEls.map { it.parseAnime() }))
         }
-        return HomePageData(groups)
+        return HomePageData(sourceId = sourceId, groups)
     }
 
     private fun Element.parseAnime(): AnimeData {

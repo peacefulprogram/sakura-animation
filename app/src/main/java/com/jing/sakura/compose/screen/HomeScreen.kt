@@ -169,7 +169,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
                     val seriesList = displayData.seriesList
                     items(
                         count = seriesList.size,
-                        key = { seriesList[it].name }
+                        key = { displayData.sourceId to it }
                     ) { videoCategoryIndex ->
                         val videoCategory = seriesList[videoCategoryIndex]
                         AnimationRow(

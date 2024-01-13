@@ -46,7 +46,7 @@ class ChangZhangSource(val okHttpClient: OkHttpClient) : AnimationSource {
             }
 
         }
-        return HomePageData(seriesList = series)
+        return HomePageData(sourceId = sourceId, seriesList = series)
     }
 
     private fun Element.parseAnime(): AnimeData {

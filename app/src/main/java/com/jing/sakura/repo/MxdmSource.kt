@@ -49,6 +49,7 @@ class MxdmSource(private val okHttpClient: OkHttpClient) : AnimationSource {
             seriesList.add(NamedValue(titleEl.text().trim(), value = videoList))
         }
         return HomePageData(
+            sourceId = sourceId,
             seriesList = seriesList
         )
     }

@@ -17,6 +17,7 @@ class WebPageRepository(
             MxdmSource(okHttpClient),
             LibVioSource(okHttpClient),
             ChangZhangSource(okHttpClient),
+            XiGuaCartoonSource(okHttpClient),
             AueteSource(okHttpClient),
             WedmSource(okHttpClient),
             SakuraSource(okHttpClient),
