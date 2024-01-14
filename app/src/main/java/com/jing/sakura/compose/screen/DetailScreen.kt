@@ -36,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
@@ -79,8 +80,10 @@ import com.jing.sakura.R
 import com.jing.sakura.compose.common.ErrorTip
 import com.jing.sakura.compose.common.FocusGroup
 import com.jing.sakura.compose.common.Loading
+import com.jing.sakura.compose.common.UpAndDownFocusProperties
 import com.jing.sakura.compose.common.Value
 import com.jing.sakura.compose.common.VideoCard
+import com.jing.sakura.compose.common.applyUpAndDown
 import com.jing.sakura.data.AnimeData
 import com.jing.sakura.data.AnimeDetailPageData
 import com.jing.sakura.data.AnimePlayList
@@ -178,10 +181,15 @@ fun DetailScreen(viewModel: DetailPageViewModel) {
         }
     }
 
-    // 正序/倒序按钮
-    val reverseFocusRequester = remember {
-        FocusRequester()
+    val focusRequesters = remember(playlists.size, videoDetail.otherAnimeList.isEmpty()) {
+        DetailPageRowFocusRequesters(
+            infoRow = FocusRequester(),
+            playListReverseButton = if (playlists.isNotEmpty()) FocusRequester() else null,
+            playListRows = List(playlists.size) { FocusRequester() },
+            otherAnimeRow = if (videoDetail.otherAnimeList.isNotEmpty()) FocusRequester() else null
+        )
     }
+
     val shouldFocusReverseButton = remember {
         Value(false)
     }
@@ -194,15 +202,30 @@ fun DetailScreen(viewModel: DetailPageViewModel) {
         Value(-1 to -1)
     }
 
+    val initialFocusSet = remember {
+        Value(false)
+    }
 
     TvLazyColumn(
         modifier = Modifier.fillMaxSize(), content = {
             item {
                 VideoInfoRow(
                     videoDetail = videoDetail,
+                    modifier = Modifier
+                        .focusRequester(focusRequesters.infoRow),
+                    upAndDownFocusProperties = UpAndDownFocusProperties(
+                        down = focusRequesters.playListReverseButton
+                            ?: focusRequesters.otherAnimeRow
+                    ),
                     playHistory = videoHistory
                 ) {
                     viewModel.loadData()
+                }
+                LaunchedEffect(Unit) {
+                    if (!initialFocusSet.value) {
+                        initialFocusSet.value = true
+                        runCatching { focusRequesters.infoRow.requestFocus() }.onFailure { it.printStackTrace() }
+                    }
                 }
             }
             items(
@@ -215,6 +238,8 @@ fun DetailScreen(viewModel: DetailPageViewModel) {
                     rememberTvLazyListState(initialFirstVisibleItemIndex = initiallyFocusedIndex)
                 PlayListRow(
                     episodes = playlist.episodeList,
+                    modifier = Modifier
+                        .focusRequester(focusRequesters.playListRows[playlistIndex]),
                     initiallyFocusedIndex = initiallyFocusedIndex,
                     listState = listState,
                     onEpisodeFocused = { epIndex, ep ->
@@ -223,49 +248,56 @@ fun DetailScreen(viewModel: DetailPageViewModel) {
                     },
                     restoreFocusEpIndex = if (restoreEpisodePosition.value.first == playlistIndex) restoreEpisodePosition.value.second else -1,
                     restoreFocusRequester = restoreEpisodeFocusRequester,
+                    upAndDownFocusProperties = UpAndDownFocusProperties(
+                        up = focusRequesters.playListRows.getOrNull(playlistIndex - 1)
+                            ?: focusRequesters.playListReverseButton, // 上一个播放列表 或者正序倒序按钮
+                        down = focusRequesters.playListRows.getOrNull(playlistIndex + 1)
+                            ?: focusRequesters.otherAnimeRow // 下一个播放列表或者推荐视频
+                    ),
                     title = {
-                        FocusGroup(Modifier.fillMaxWidth()) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = playlist.name,
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                if (playlistIndex == 0) {
-                                    Text(text = " | ")
-                                    Surface(
-                                        onClick = {
-                                            changeFocusedEpisodeIndexForReversed()
-                                            shouldFocusReverseButton.value = true
-                                            reverseEpisode = !reverseEpisode
-                                        },
-                                        scale = ClickableSurfaceScale.None,
-                                        colors = ClickableSurfaceDefaults.colors(
-                                            focusedContainerColor = MaterialTheme.colorScheme.surface
-                                        ),
-                                        shape = ClickableSurfaceDefaults.shape(shape = MaterialTheme.shapes.small),
-                                        border = ClickableSurfaceDefaults.border(
-                                            focusedBorder = Border(
-                                                BorderStroke(
-                                                    2.dp, MaterialTheme.colorScheme.border
-                                                )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = playlist.name,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            if (playlistIndex == 0) {
+                                Text(text = " | ")
+                                Surface(
+                                    onClick = {
+                                        changeFocusedEpisodeIndexForReversed()
+                                        shouldFocusReverseButton.value = true
+                                        reverseEpisode = !reverseEpisode
+                                    },
+                                    scale = ClickableSurfaceScale.None,
+                                    colors = ClickableSurfaceDefaults.colors(
+                                        focusedContainerColor = MaterialTheme.colorScheme.surface
+                                    ),
+                                    shape = ClickableSurfaceDefaults.shape(shape = MaterialTheme.shapes.small),
+                                    border = ClickableSurfaceDefaults.border(
+                                        focusedBorder = Border(
+                                            BorderStroke(
+                                                2.dp, MaterialTheme.colorScheme.border
                                             )
-                                        ),
-                                        modifier = Modifier
-                                            .focusRequester(reverseFocusRequester)
-                                            .initiallyFocused()
-                                    ) {
-                                        Text(
-                                            text = if (reverseEpisode) "倒序" else "正序",
-                                            style = MaterialTheme.typography.titleMedium,
-                                            modifier = Modifier.padding(8.dp, 4.dp)
                                         )
-                                    }
+                                    ),
+                                    modifier = Modifier
+                                        .focusRequester(focusRequesters.playListReverseButton!!)
+                                        .focusProperties {
+                                            up = focusRequesters.infoRow
+                                            down = focusRequesters.playListRows[0]
+                                        }
+                                ) {
+                                    Text(
+                                        text = if (reverseEpisode) "倒序" else "正序",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        modifier = Modifier.padding(8.dp, 4.dp)
+                                    )
                                 }
-                                LaunchedEffect(reverseFocusRequester) {
-                                    if (shouldFocusReverseButton.value) {
-                                        shouldFocusReverseButton.value = false
-                                        runCatching { reverseFocusRequester.requestFocus() }
-                                    }
+                            }
+                            LaunchedEffect(shouldFocusReverseButton) {
+                                if (shouldFocusReverseButton.value) {
+                                    shouldFocusReverseButton.value = false
+                                    runCatching { focusRequesters.playListReverseButton?.requestFocus() }
                                 }
                             }
                         }
@@ -285,7 +317,18 @@ fun DetailScreen(viewModel: DetailPageViewModel) {
                 }
             }
             item {
-                RelativeVideoRow(videoDetail.otherAnimeList, viewModel.sourceId)
+                if (videoDetail.otherAnimeList.isNotEmpty()) {
+                    RelativeVideoRow(
+                        videoDetail.otherAnimeList,
+                        viewModel.sourceId,
+                        Modifier
+                            .focusRequester(focusRequesters.otherAnimeRow!!),
+                        upAndDownFocusProperties = UpAndDownFocusProperties(
+                            up = focusRequesters.playListRows.lastOrNull()
+                                ?: focusRequesters.infoRow
+                        )
+                    )
+                }
             }
         }, verticalArrangement = Arrangement.spacedBy(10.dp)
     )
@@ -302,15 +345,20 @@ fun DetailScreen(viewModel: DetailPageViewModel) {
 
 @OptIn(ExperimentalTvFoundationApi::class)
 @Composable
-fun RelativeVideoRow(videos: List<AnimeData>, sourceId: String) {
+fun RelativeVideoRow(
+    videos: List<AnimeData>,
+    sourceId: String,
+    modifier: Modifier,
+    upAndDownFocusProperties: UpAndDownFocusProperties = UpAndDownFocusProperties.DEFAULT
+) {
     if (videos.isEmpty()) {
         return
     }
     val context = LocalContext.current
-    Column {
-        Text(text = stringResource(id = R.string.related_videos))
-        Spacer(modifier = Modifier.height(5.dp))
-        FocusGroup {
+    FocusGroup(modifier) {
+        Column {
+            Text(text = stringResource(id = R.string.related_videos))
+            Spacer(modifier = Modifier.height(5.dp))
             TvLazyRow(
                 content = {
                     items(count = videos.size, key = { videos[it].id }) { videoIndex ->
@@ -321,6 +369,7 @@ fun RelativeVideoRow(videos: List<AnimeData>, sourceId: String) {
                                     dimensionResource(id = R.dimen.poster_width),
                                     dimensionResource(id = R.dimen.poster_height)
                                 )
+                                .focusProperties { applyUpAndDown(upAndDownFocusProperties) }
                                 .run {
                                     if (videoIndex == 0) initiallyFocused() else restorableFocus()
                                 },
@@ -341,10 +390,12 @@ fun RelativeVideoRow(videos: List<AnimeData>, sourceId: String) {
 @Composable
 fun PlayListRow(
     episodes: List<AnimePlayListEpisode>,
+    modifier: Modifier,
     title: @Composable () -> Unit,
     listState: TvLazyListState,
     restoreFocusRequester: FocusRequester,
     restoreFocusEpIndex: Int,
+    upAndDownFocusProperties: UpAndDownFocusProperties = UpAndDownFocusProperties.DEFAULT,
     initiallyFocusedIndex: Int = 0,
     onEpisodeFocused: (Int, AnimePlayListEpisode) -> Unit,
     onEpisodeClick: (Int, AnimePlayListEpisode) -> Unit,
@@ -352,7 +403,7 @@ fun PlayListRow(
     Column(modifier = Modifier.fillMaxWidth()) {
         title()
         Spacer(modifier = Modifier.height(5.dp))
-        FocusGroup(Modifier.fillMaxWidth()) {
+        FocusGroup(modifier) {
             TvLazyRow(
                 state = listState,
                 pivotOffsets = PivotOffsets(0f),
@@ -360,18 +411,21 @@ fun PlayListRow(
                 content = {
                     items(count = episodes.size, key = { episodes[it].episodeId }) { epIndex ->
                         val ep = episodes[epIndex]
-                        val modifier =
+                        val episodeModifier =
                             if (epIndex == initiallyFocusedIndex) {
                                 Modifier.initiallyFocused()
                             } else Modifier.restorableFocus()
                         VideoEpisode(
-                            modifier = modifier
+                            modifier = episodeModifier
                                 .run {
                                     if (restoreFocusEpIndex == epIndex) {
                                         focusRequester(restoreFocusRequester)
                                     } else {
                                         this
                                     }
+                                }
+                                .focusProperties {
+                                    applyUpAndDown(upAndDownFocusProperties)
                                 }
                                 .onFocusChanged {
                                     if (it.hasFocus || it.isFocused) {
@@ -390,111 +444,124 @@ fun PlayListRow(
 }
 
 
-@OptIn(ExperimentalTvMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(
+    ExperimentalTvMaterial3Api::class, ExperimentalFoundationApi::class,
+    ExperimentalTvFoundationApi::class
+)
 @Composable
 fun VideoInfoRow(
     videoDetail: AnimeDetailPageData,
+    modifier: Modifier,
+    upAndDownFocusProperties: UpAndDownFocusProperties = UpAndDownFocusProperties.DEFAULT,
     playHistory: VideoHistoryEntity? = null,
     onCoverClick: () -> Unit = {}
 ) {
-    val focusRequester = remember {
-        FocusRequester()
-    }
     var showDescDialog by remember {
         mutableStateOf(false)
     }
 
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .height(dimensionResource(id = R.dimen.poster_height) * 1.3f + 10.dp)
-    ) {
-        CompactCard(
-            onClick = {
-                onCoverClick()
-            },
-            image = {
-                AsyncImage(
-                    model = videoDetail.imageUrl,
-                    contentDescription = videoDetail.animeName,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            },
-            title = {},
-            scale = CardDefaults.scale(focusedScale = 1f),
-            modifier = Modifier
-                .focusRequester(focusRequester)
-                .size(
-                    dimensionResource(id = R.dimen.poster_width) * 1.3f,
-                    dimensionResource(id = R.dimen.poster_height) * 1.3f
-                )
-                .padding(2.dp)
-        )
-        Spacer(modifier = Modifier.width(15.dp))
-        Column(
-            modifier = Modifier
-                .padding(horizontal = 10.dp)
-                .weight(1f)
-                .fillMaxHeight(),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+    FocusGroup(modifier) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .height(dimensionResource(id = R.dimen.poster_height) * 1.3f + 10.dp)
         ) {
-            Text(
-                text = videoDetail.animeName,
-                style = MaterialTheme.typography.titleLarge,
-                maxLines = 1,
-                modifier = Modifier.basicMarquee()
+            CompactCard(
+                onClick = {
+                    onCoverClick()
+                },
+                image = {
+                    AsyncImage(
+                        model = videoDetail.imageUrl,
+                        contentDescription = videoDetail.animeName,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                },
+                title = {},
+                scale = CardDefaults.scale(focusedScale = 1f),
+                modifier = Modifier
+                    .initiallyFocused()
+                    .size(
+                        dimensionResource(id = R.dimen.poster_width) * 1.3f,
+                        dimensionResource(id = R.dimen.poster_height) * 1.3f
+                    )
+                    .focusProperties { applyUpAndDown(upAndDownFocusProperties) }
+                    .padding(2.dp)
             )
-            if (playHistory != null) {
+            Spacer(modifier = Modifier.width(15.dp))
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = 10.dp)
+                    .weight(1f)
+                    .fillMaxHeight(),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
                 Text(
-                    text = "上次播放到${playHistory.lastEpisodeName} ${(playHistory.lastPlayTime / 1000).secondsToMinuteAndSecondText()}/${(playHistory.videoDuration / 1000).secondsToMinuteAndSecondText()}",
-                    style = MaterialTheme.typography.bodyMedium
+                    text = videoDetail.animeName,
+                    style = MaterialTheme.typography.titleLarge,
+                    maxLines = 1,
+                    modifier = Modifier.basicMarquee()
                 )
-            }
+                if (playHistory != null) {
+                    Text(
+                        text = "上次播放到${playHistory.lastEpisodeName} ${(playHistory.lastPlayTime / 1000).secondsToMinuteAndSecondText()}/${(playHistory.videoDuration / 1000).secondsToMinuteAndSecondText()}",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
 
-            ProvideTextStyle(value = MaterialTheme.typography.bodySmall) {
-                TvLazyVerticalGrid(
-                    columns = TvGridCells.Fixed(2),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    content = {
-                        items(items = videoDetail.infoList) { info ->
-                            Text(text = info, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                        }
-                        if (videoDetail.description.isNotEmpty()) {
-                            item(span = { TvGridItemSpan(maxLineSpan) }) {
-                                Surface(
-                                    modifier = Modifier.padding(2.dp),
-                                    onClick = { showDescDialog = true },
-                                    scale = ClickableSurfaceScale.None,
-                                    colors = ClickableSurfaceDefaults.colors(
-                                        focusedContainerColor = MaterialTheme.colorScheme.surface
-                                    ),
-                                    border = ClickableSurfaceDefaults.border(
-                                        focusedBorder = Border(
-                                            BorderStroke(
-                                                2.dp, MaterialTheme.colorScheme.border
+                ProvideTextStyle(value = MaterialTheme.typography.bodySmall) {
+                    TvLazyVerticalGrid(
+                        columns = TvGridCells.Fixed(2),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        content = {
+                            items(items = videoDetail.infoList) { info ->
+                                Text(text = info, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            }
+                            if (videoDetail.description.isNotEmpty()) {
+                                item(span = { TvGridItemSpan(maxLineSpan) }) {
+                                    Surface(
+                                        modifier = Modifier
+                                            .padding(2.dp)
+                                            .focusProperties {
+                                                applyUpAndDown(
+                                                    upAndDownFocusProperties
+                                                )
+                                            }
+                                            .restorableFocus(),
+                                        onClick = { showDescDialog = true },
+                                        scale = ClickableSurfaceScale.None,
+                                        colors = ClickableSurfaceDefaults.colors(
+                                            focusedContainerColor = MaterialTheme.colorScheme.surface
+                                        ),
+                                        border = ClickableSurfaceDefaults.border(
+                                            focusedBorder = Border(
+                                                BorderStroke(
+                                                    2.dp, MaterialTheme.colorScheme.border
+                                                )
+                                            )
+                                        ),
+                                        shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.extraSmall)
+                                    ) {
+                                        Text(
+                                            text = videoDetail.description,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier.padding(
+                                                horizontal = 6.dp, vertical = 3.dp
                                             )
                                         )
-                                    ),
-                                    shape = ClickableSurfaceDefaults.shape(MaterialTheme.shapes.extraSmall)
-                                ) {
-                                    Text(
-                                        text = videoDetail.description,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.padding(
-                                            horizontal = 6.dp, vertical = 3.dp
-                                        )
-                                    )
+                                    }
                                 }
+
                             }
+                        })
+                }
 
-                        }
-                    })
             }
-
         }
+
     }
 
     // 在Dialog中显示视频简介
@@ -559,9 +626,6 @@ fun VideoInfoRow(
         )
 
     }
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
-    }
 
 }
 
@@ -610,3 +674,11 @@ private data class PlayListWrapper(
     val id: Int,
     val playlist: AnimePlayList
 )
+
+private data class DetailPageRowFocusRequesters(
+    val infoRow: FocusRequester,
+    val playListReverseButton: FocusRequester?,
+    val playListRows: List<FocusRequester>,
+    val otherAnimeRow: FocusRequester?
+)
+

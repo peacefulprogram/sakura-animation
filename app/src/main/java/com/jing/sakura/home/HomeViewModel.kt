@@ -5,7 +5,9 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jing.sakura.SakuraApplication
+import com.jing.sakura.data.AnimeData
 import com.jing.sakura.data.HomePageData
+import com.jing.sakura.data.NamedValue
 import com.jing.sakura.data.Resource
 import com.jing.sakura.repo.AnimationSource
 import com.jing.sakura.repo.MxdmSource
@@ -62,6 +64,26 @@ class HomeViewModel(
         loadData(false)
     }
 
+    private fun processHomePageData(data: HomePageData): HomePageData {
+        val map = mutableMapOf<String, MutableList<AnimeData>>()
+        data.seriesList.forEach { (name, videos) ->
+            var exists = map[name]
+            if (exists == null) {
+                exists = mutableListOf()
+                map[name] = exists
+            }
+            exists.addAll(videos)
+        }
+        return data.copy(
+            seriesList = map.entries.map { (name, videos) ->
+                NamedValue(
+                    name = name,
+                    value = videos.distinctBy { it.id }
+                )
+            }
+        )
+    }
+
     fun loadData(silent: Boolean = false) {
         val lastValue = _homePageData.value
         if (lastValue is Resource.Success) {
@@ -72,7 +94,7 @@ class HomeViewModel(
             _homePageData.emit(Resource.Loading(silent = silent))
             try {
                 repository.fetchHomePage(currentSourceId).also {
-                    _homePageData.emit(Resource.Success(it))
+                    _homePageData.emit(Resource.Success(processHomePageData(it)))
                 }
             } catch (ex: Exception) {
                 lastHomePageData = null

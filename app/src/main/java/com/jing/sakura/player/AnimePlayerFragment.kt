@@ -1,7 +1,9 @@
 package com.jing.sakura.player
 
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
@@ -17,10 +19,12 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.Player.Listener
+import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.leanback.LeanbackPlayerAdapter
 import com.jing.sakura.SakuraApplication
 import com.jing.sakura.data.Resource
@@ -36,7 +40,10 @@ import org.koin.androidx.viewmodel.ext.android.activityViewModel
 import org.koin.core.parameter.parametersOf
 import org.koin.core.qualifier.qualifier
 
+
 class AnimePlayerFragment : VideoSupportFragment() {
+
+    private val TAG = "AnimePlayerFragment"
 
     private val viewModel: VideoPlayerViewModel by activityViewModel {
         val intentArg = requireActivity().intent.getSerializableExtra(
@@ -67,6 +74,10 @@ class AnimePlayerFragment : VideoSupportFragment() {
             } else {
                 viewModel.stopSaveHistory()
             }
+        }
+
+        override fun onVideoSizeChanged(videoSize: VideoSize) {
+            Log.d(TAG, "videoSizeChanged: ${videoSize.width} x ${videoSize.height}")
         }
 
     }
@@ -148,21 +159,51 @@ class AnimePlayerFragment : VideoSupportFragment() {
 
     override fun onStart() {
         super.onStart()
-        exoplayer = buildPlayer()
+        if (Build.VERSION.SDK_INT > 23) {
+            exoplayer = buildPlayer()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (Build.VERSION.SDK_INT <= 23 && exoplayer == null) {
+            exoplayer = buildPlayer()
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if (Build.VERSION.SDK_INT <= 23) {
+            destroyPlayer()
+        }
     }
 
     override fun onStop() {
         super.onStop()
-        destroyPlayer()
+        if (Build.VERSION.SDK_INT > 23) {
+            destroyPlayer()
+        }
     }
 
 
-    private fun buildPlayer() =
-        ExoPlayer.Builder(requireContext()).build().apply {
-            prepareGlue(this)
-            playWhenReady = true
-            addListener(playerListener)
-        }
+    @OptIn(UnstableApi::class)
+    private fun buildPlayer(): ExoPlayer {
+        val trackSelector = DefaultTrackSelector(
+            requireContext(), DefaultTrackSelector.Parameters
+                .Builder(requireContext())
+                .setForceHighestSupportedBitrate(true)
+                .build()
+        )
+        return ExoPlayer.Builder(requireContext())
+            .setTrackSelector(trackSelector)
+            .build()
+            .apply {
+                prepareGlue(this)
+                playWhenReady = true
+                addListener(playerListener)
+            }
+    }
+
 
     private fun destroyPlayer() {
         exoplayer?.let {
@@ -170,8 +211,8 @@ class AnimePlayerFragment : VideoSupportFragment() {
             // Pause the player to notify listeners before it is released.
             it.pause()
             it.release()
-            exoplayer = null
         }
+        exoplayer = null
     }
 
     @OptIn(UnstableApi::class)

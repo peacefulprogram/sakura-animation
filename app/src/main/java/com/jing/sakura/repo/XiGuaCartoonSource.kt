@@ -1,5 +1,6 @@
 package com.jing.sakura.repo
 
+import androidx.annotation.Keep
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.jing.sakura.data.AnimeData
@@ -305,11 +306,13 @@ class XiGuaCartoonSource(private val okHttpClient: OkHttpClient) : AnimationSour
     }
 
 
+    @Keep
     data class VideoResponse(
         val items: List<VideoData>?,
         val next: String?
     )
 
+    @Keep
     data class VideoData(
         @SerializedName("cartoon_id")
         val id: String,
