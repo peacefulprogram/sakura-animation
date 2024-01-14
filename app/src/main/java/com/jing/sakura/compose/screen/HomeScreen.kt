@@ -89,6 +89,7 @@ import com.jing.sakura.history.HistoryActivity
 import com.jing.sakura.home.HomeViewModel
 import com.jing.sakura.search.SearchActivity
 import com.jing.sakura.timeline.UpdateTimelineActivity
+import kotlinx.coroutines.launch
 
 @Composable
 fun HomeScreen(viewModel: HomeViewModel) {
@@ -232,17 +233,15 @@ fun HomeScreen(viewModel: HomeViewModel) {
                             }
                         },
                         onBackPressed = {
-//                            if (columnState.firstVisibleItemIndex == 0) {
-//                                false
-//                            } else {
-//                                coroutineScope.launch {
-//                                    columnState.scrollToItem(0)
-//                                    focusRequesterRows.seriesRows.firstOrNull()?.requestFocus()
-//                                }
-//                                true
-//                            }
-                            viewModel.loadData(false)
-                            true
+                            if (columnState.firstVisibleItemIndex == 0) {
+                                false
+                            } else {
+                                coroutineScope.launch {
+                                    columnState.scrollToItem(0)
+                                    focusRequesterRows.seriesRows.firstOrNull()?.requestFocus()
+                                }
+                                true
+                            }
                         },
                         onVideoFocused = { groupName, video ->
                             lastFocusedRowPosition =
