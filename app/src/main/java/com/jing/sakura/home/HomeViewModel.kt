@@ -12,6 +12,7 @@ import com.jing.sakura.data.Resource
 import com.jing.sakura.repo.AnimationSource
 import com.jing.sakura.repo.MxdmSource
 import com.jing.sakura.repo.WebPageRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,7 +46,7 @@ class HomeViewModel(
     var lastHomePageData: HomePageData? = null
         private set
 
-    private var loadDataJob: Job? = null
+    private var loadDataJob: Pair<String, Job>? = null
 
     init {
         loadData(false)
@@ -61,7 +62,7 @@ class HomeViewModel(
         viewModelScope.launch {
             _currentSource.emit(source)
         }
-        loadData(false)
+        loadData(false, saveLastData = false)
     }
 
     private fun processHomePageData(data: HomePageData): HomePageData {
@@ -84,24 +85,38 @@ class HomeViewModel(
         )
     }
 
-    fun loadData(silent: Boolean = false) {
+    fun loadData(silent: Boolean = false, saveLastData: Boolean = true) {
         val lastValue = _homePageData.value
-        if (lastValue is Resource.Success) {
-            lastHomePageData = lastValue.data
+        lastHomePageData = if (saveLastData && lastValue is Resource.Success) {
+            lastValue.data
+        } else {
+            null
         }
-        loadDataJob?.cancel()
-        loadDataJob = viewModelScope.launch(Dispatchers.IO) {
-            _homePageData.emit(Resource.Loading(silent = silent))
+        val sourceId = currentSourceId
+        val job = loadDataJob
+        if (job != null) {
+            if (job.first == sourceId) {
+                return
+            }
+            job.second.cancel()
+        }
+        loadDataJob = sourceId to viewModelScope.launch(Dispatchers.IO) {
             try {
+                _homePageData.emit(Resource.Loading(silent = silent))
                 repository.fetchHomePage(currentSourceId).also {
                     _homePageData.emit(Resource.Success(processHomePageData(it)))
                 }
             } catch (ex: Exception) {
+                if (ex is CancellationException) {
+                    throw ex
+                }
                 lastHomePageData = null
                 Log.e("homepage", "请求数据失败", ex)
 
                 val message = "请求数据失败:" + ex.message
                 _homePageData.emit(Resource.Error(message))
+            } finally {
+                loadDataJob = null
             }
         }
     }
