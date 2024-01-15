@@ -5,7 +5,7 @@ on:
       - '**'
 jobs:
   build-and-release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3.5.2
@@ -25,6 +25,8 @@ jobs:
           alias: ${{ secrets.KEY_ALIAS }}
           keyStorePassword: ${{ secrets.KEY_STORE_PWD }}
           keyPassword: ${{ secrets.KEY_PWD }}
+        env:
+          BUILD_TOOLS_VERSION: "33.0.0"
       - name: rename-apk
         run: mv app/build/outputs/apk/release/app-release-unsigned-signed.apk kan-animation-${{ github.ref_name }}.apk
       - name: Release
