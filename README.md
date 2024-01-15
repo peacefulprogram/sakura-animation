@@ -12,6 +12,7 @@ Android TV端动漫app, 使用[jetpack compose](https://developer.android.com/tr
 - [x] [厂长资源](https://www.czzy88.com/)
 - [x] [LIBVIO](https://www.libvio.me/)
 - [x] [Auete影视](https://auete.pro/)
+- [x] [西瓜卡通](https://cn.xgcartoon.com/)
 
 # 已支持的功能
 - [x] 播放记录
