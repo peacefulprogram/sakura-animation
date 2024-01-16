@@ -12,8 +12,8 @@ android {
         applicationId = "com.jing.sakura"
         minSdk = 21
         targetSdk = 34
-        versionCode = 6
-        versionName = "2.3.1"
+        versionCode = 7
+        versionName = "2.3.2"
 
     }
     packaging {

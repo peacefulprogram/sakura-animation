@@ -1,6 +1,5 @@
 package com.jing.sakura.extend
 
-import android.util.Log
 import android.webkit.CookieManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -50,7 +49,7 @@ suspend fun OkHttpClient.newRequest(
         if (ex is CancellationException) {
             throw ex
         }
-        Log.e("OkHttpClient.newRequest", "WebViewCookieHelper检测错误, ${ex.message}", ex)
+        throw RuntimeException("通过DDOS检测失败,${ex.message}", ex)
     }
     return executeWithCoroutine(Request.Builder().apply(block).build())
 }

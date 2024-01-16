@@ -11,6 +11,7 @@ import com.jing.sakura.BuildConfig
 import com.jing.sakura.SakuraApplication
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -71,6 +72,8 @@ abstract class WebViewCookieHelper {
             withTimeout(timeoutSeconds.seconds) {
                 cookieDef.await()
             }
+        } catch (ex: TimeoutCancellationException) {
+            throw RuntimeException(ex.message)
         } finally {
             mainExecutor.execute {
                 with(webView) {

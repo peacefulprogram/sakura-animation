@@ -15,6 +15,8 @@ import com.jing.sakura.extend.bodyString
 import com.jing.sakura.extend.encodeUrl
 import com.jing.sakura.extend.newGetRequest
 import com.jing.sakura.extend.newRequest
+import okhttp3.Cookie
+import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
@@ -291,7 +293,21 @@ class ChangZhangSource(val okHttpClient: OkHttpClient) : AnimationSource {
         val doc = okHttpClient.newRequest(CloudFlareHelper) {
             url("$BASE_URL/xssearch?q=${keyword.encodeUrl()}&f=_all&p=$page")
             get()
-        }.asDocument()
+        }.use { resp ->
+            val respDoc = resp.asDocument()
+            if (respDoc.title().contains("人机验证")) {
+                val value = Cookie.parseAll(resp.request.url, resp.headers)
+                    .lastOrNull { it.name == "result" }?.value
+                    ?: throw RuntimeException("Cookie中无验证码")
+                okHttpClient.newRequest {
+                    url(resp.request.url)
+                    post(FormBody.Builder().add("result", value).build())
+                }
+                okHttpClient.newGetRequest { url(resp.request.url) }.asDocument()
+            } else {
+                respDoc
+            }
+        }
         val videos = doc.select(".search_list > ul > li").map { it.parseAnime() }
         return AnimePageData(
             page = page,
