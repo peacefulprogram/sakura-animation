@@ -15,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.KeyEvent
-import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.CardDefaults
@@ -41,17 +40,16 @@ fun VideoCard(
     var focused by remember {
         mutableStateOf(false)
     }
+    var keyDownCount by remember(focused) {
+        Value(0)
+    }
     CompactCard(
-        modifier = modifier.onFocusChanged {
-            focused = it.isFocused || it.hasFocus
-        }.run {
-            if (onKeyEvent != null) {
-                onPreviewKeyEvent(onKeyEvent)
-            } else {
-                this
+        modifier = modifier
+            .onFocusChanged {
+                focused = it.isFocused || it.hasFocus
             }
-        },
-        onClick = onClick, onLongClick = onLongClick,
+            .customClick(onClick, onLongClick),
+        onClick = {},
         image = {
             AsyncImage(
                 model = imageUrl,
@@ -81,13 +79,15 @@ fun VideoCard(
                     Text(text = subTitle,
                         style = MaterialTheme.typography.titleSmall,
                         maxLines = 1,
-                        modifier = Modifier.graphicsLayer { alpha = 0.7f }.run {
-                            if (focused) {
-                                basicMarquee()
-                            } else {
-                                this
-                            }
-                        })
+                        modifier = Modifier
+                            .graphicsLayer { alpha = 0.7f }
+                            .run {
+                                if (focused) {
+                                    basicMarquee()
+                                } else {
+                                    this
+                                }
+                            })
 
                 }
             }

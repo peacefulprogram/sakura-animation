@@ -3,6 +3,7 @@ package com.jing.sakura.compose.screen
 import android.Manifest
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.speech.SpeechRecognizer
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -65,8 +66,11 @@ import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 import com.jing.sakura.R
 import com.jing.sakura.compose.common.ConfirmDeleteDialog
+import com.jing.sakura.compose.common.CustomTextField
 import com.jing.sakura.compose.common.FocusGroup
 import com.jing.sakura.compose.common.SpeechToTextParser
+import com.jing.sakura.compose.common.customClick
+import com.jing.sakura.compose.common.safelyRequestFocus
 import com.jing.sakura.http.WebServerContext
 import com.jing.sakura.http.WebsocketOperation
 import com.jing.sakura.http.WebsocketResult
@@ -75,6 +79,7 @@ import com.jing.sakura.room.SearchHistoryEntity
 import com.jing.sakura.search.SearchResultActivity
 import com.jing.sakura.search.SearchViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -158,8 +163,7 @@ fun SearchScreen(viewModel: SearchViewModel) {
 
 @OptIn(
     ExperimentalPermissionsApi::class,
-    ExperimentalTvMaterial3Api::class,
-    ExperimentalMaterial3Api::class
+    ExperimentalTvMaterial3Api::class
 )
 @Composable
 fun InputKeywordRow(onSearch: (String) -> Unit) {
@@ -205,22 +209,22 @@ fun InputKeywordRow(onSearch: (String) -> Unit) {
     }
     val sttState by speechToTextParser.state.collectAsState()
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        AnimatedContent(targetState = sttState.isSpeaking, label = "") { isSpeaking ->
-            IconButton(
-                onClick = {
-                    if (isSpeaking) {
-                        speechToTextParser.stopListening()
+        IconButton(
+            onClick = {
+                if (sttState.isSpeaking) {
+                    speechToTextParser.stopListening()
+                } else {
+                    if (permissionState.status.isGranted) {
+                        speechToTextParser.startListening()
                     } else {
-                        if (permissionState.status.isGranted) {
-                            speechToTextParser.startListening()
-                        } else {
-                            permissionState.launchPermissionRequest()
-                        }
+                        permissionState.launchPermissionRequest()
                     }
-                },
-                scale = ButtonScale.None,
-                modifier = Modifier.focusRequester(speechFocusRequester)
-            ) {
+                }
+            },
+            scale = ButtonScale.None,
+            modifier = Modifier.focusRequester(speechFocusRequester)
+        ) {
+            AnimatedContent(targetState = sttState.isSpeaking, label = "") { isSpeaking ->
                 if (isSpeaking) {
                     Icon(
                         imageVector = Icons.Rounded.Stop,
@@ -235,7 +239,8 @@ fun InputKeywordRow(onSearch: (String) -> Unit) {
             }
         }
         Spacer(modifier = Modifier.width(20.dp))
-        TextField(value = inputKeyword,
+        CustomTextField(
+            value = inputKeyword,
             onValueChange = { inputKeyword = it },
             modifier = Modifier.weight(1f),
             placeholder = {
@@ -244,7 +249,8 @@ fun InputKeywordRow(onSearch: (String) -> Unit) {
                 } else {
                     Text(text = stringResource(R.string.input_search_keyword))
                 }
-            })
+            }
+        )
         Spacer(modifier = Modifier.width(20.dp))
 
         IconButton(
@@ -259,15 +265,25 @@ fun InputKeywordRow(onSearch: (String) -> Unit) {
     }
 
     LaunchedEffect(sttState) {
-        if (!sttState.isSpeaking && sttState.text.isNotEmpty()) {
-            inputKeyword = sttState.text.trim()
-            if (inputKeyword.isNotBlank()) {
-                searchButtonFocusRequester.requestFocus()
+        if (!sttState.isSpeaking) {
+            val text = sttState.text.trim()
+            if (text.isNotEmpty()) {
+                inputKeyword = text
+                searchButtonFocusRequester.safelyRequestFocus()
+            } else {
+                delay(200)
+                speechFocusRequester.safelyRequestFocus()
             }
         }
     }
+    LaunchedEffect(Unit){
+        speechFocusRequester.safelyRequestFocus()
+    }
     LaunchedEffect(sttState.isSpeaking) {
-        speechFocusRequester.requestFocus()
+        if (sttState.isSpeaking) {
+            delay(200)
+            speechFocusRequester.requestFocus()
+        }
     }
 }
 
@@ -353,8 +369,7 @@ fun Keyword(
     var focused by remember {
         mutableStateOf(false)
     }
-    Surface(onClick = onClick,
-        onLongClick = onLongClick,
+    Surface(onClick = {},
         scale = ClickableSurfaceScale.None,
         border = ClickableSurfaceDefaults.border(
             focusedBorder = Border(
@@ -366,9 +381,12 @@ fun Keyword(
         colors = ClickableSurfaceDefaults.colors(
             focusedContainerColor = MaterialTheme.colorScheme.surface
         ),
-        modifier = modifier.onFocusChanged {
-            focused = it.isFocused || it.hasFocus
-        }) {
+        modifier = modifier
+            .onFocusChanged {
+                focused = it.isFocused || it.hasFocus
+            }
+            .customClick(onClick, onLongClick)
+    ) {
         var textModifier = Modifier.padding(8.dp, 4.dp)
         if (focused) {
             textModifier = textModifier.basicMarquee()

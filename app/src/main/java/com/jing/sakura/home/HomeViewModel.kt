@@ -121,7 +121,6 @@ class HomeViewModel(
         }
     }
 
-    fun getAllSources(): List<Pair<String, String>> =
-        repository.animationSources.map { it.sourceId to it.name }
+    fun getAllSources(): List<AnimationSource> = repository.animationSources
 
 }

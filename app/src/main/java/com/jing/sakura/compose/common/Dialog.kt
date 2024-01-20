@@ -5,7 +5,12 @@ import androidx.compose.foundation.focusable
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusModifier
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Border
@@ -23,6 +28,9 @@ fun ConfirmDeleteDialog(
     onDeleteAllClick: () -> Unit,
     onCancel: () -> Unit
 ) {
+    val focusRequester = remember {
+        FocusRequester()
+    }
 
     AlertDialog(onDismissRequest = onCancel, confirmButton = {
         Button(
@@ -46,6 +54,7 @@ fun ConfirmDeleteDialog(
         }
     }, dismissButton = {
         Button(
+            modifier = Modifier.focusRequester(focusRequester),
             onClick = onDeleteClick,
             colors = ButtonDefaults.colors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
@@ -69,5 +78,8 @@ fun ConfirmDeleteDialog(
             text = text, modifier = Modifier.focusable()
         )
     })
+    LaunchedEffect(Unit){
+        focusRequester.requestFocus()
+    }
 
 }

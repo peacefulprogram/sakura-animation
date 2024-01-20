@@ -71,6 +71,7 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme
 import com.jing.sakura.R
 import com.jing.sakura.category.AnimeCategoryActivity
+import com.jing.sakura.compose.common.ChangeSourceDialog
 import com.jing.sakura.compose.common.ErrorTip
 import com.jing.sakura.compose.common.FocusGroup
 import com.jing.sakura.compose.common.Loading
@@ -471,87 +472,6 @@ fun TvLazyListScope.videoRows(
                 })
         }
     }
-}
-
-@OptIn(ExperimentalTvMaterial3Api::class)
-@Composable
-fun ChangeSourceDialog(
-    allSources: List<Pair<String, String>>,
-    currentSourceId: String,
-    onDismissRequest: () -> Unit,
-    onChangeSource: (sourceId: String) -> Unit,
-) {
-    val defaultIndex = remember(allSources, currentSourceId) {
-        allSources.indexOfFirst { it.first == currentSourceId }
-    }
-    Dialog(
-        onDismissRequest = onDismissRequest,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        val listState =
-            rememberTvLazyListState(initialFirstVisibleItemIndex = defaultIndex)
-        val focusRequester = remember {
-            FocusRequester()
-        }
-        Column(
-            modifier = Modifier
-                .clip(RoundedCornerShape(10.dp))
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(20.dp)
-                .width(400.dp)
-
-        ) {
-            Text(text = stringResource(R.string.choose_animation_source))
-            Spacer(modifier = Modifier.height(10.dp))
-            TvLazyColumn(state = listState, content = {
-                items(count = allSources.size) { sourceIndex ->
-                    val source = allSources[sourceIndex]
-                    val modifier = Modifier.run {
-                        if (sourceIndex == defaultIndex) {
-                            focusRequester(focusRequester)
-                        } else {
-                            this
-                        }
-                    }
-                    SourceItem(
-                        source = source,
-                        modifier = modifier,
-                        textColor = if (currentSourceId == source.first) colorResource(id = R.color.cyan300) else MaterialTheme.colorScheme.onSurface
-                    ) {
-                        onChangeSource(source.first)
-                    }
-                }
-            })
-            LaunchedEffect(Unit) {
-                focusRequester.requestFocus()
-            }
-        }
-    }
-}
-
-@Composable
-fun SourceItem(
-    modifier: Modifier = Modifier,
-    textColor: Color,
-    source: Pair<String, String>,
-    onClick: () -> Unit
-) {
-    var focused by remember {
-        mutableStateOf(false)
-    }
-    Text(text = source.second,
-        color = textColor,
-        modifier = modifier
-            .fillMaxWidth()
-            .background(if (focused) colorResource(id = R.color.gray800) else Color.Transparent)
-            .padding(10.dp)
-            .onFocusChanged {
-                focused = it.isFocused || it.hasFocus
-            }
-            .focusable()
-            .clickable(onClick = onClick)
-    )
-
 }
 
 @OptIn(
