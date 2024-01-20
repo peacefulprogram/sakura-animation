@@ -40,15 +40,12 @@ fun VideoCard(
     var focused by remember {
         mutableStateOf(false)
     }
-    var keyDownCount by remember(focused) {
-        Value(0)
-    }
     CompactCard(
         modifier = modifier
             .onFocusChanged {
                 focused = it.isFocused || it.hasFocus
             }
-            .customClick(onClick, onLongClick),
+            .customClick(onClick = onClick, onLongClick = onLongClick, onKeyEvent = onKeyEvent),
         onClick = {},
         image = {
             AsyncImage(

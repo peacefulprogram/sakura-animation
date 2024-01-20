@@ -98,8 +98,8 @@ class AnimePlayerFragment : VideoSupportFragment() {
         super.onViewCreated(view, savedInstanceState)
         lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.playerTitle.collectLatest {
-                    glue?.title = it
+                viewModel.playerSubTitle.collectLatest {
+                    glue?.subtitle = it
                 }
             }
         }
@@ -242,10 +242,10 @@ class AnimePlayerFragment : VideoSupportFragment() {
             },
             chooseEpisode = this::openPlayListDialogAndChoose
         ).apply {
+            title = viewModel.anime.animeName
             glue = this
             host = VideoSupportFragmentGlueHost(this@AnimePlayerFragment)
             isControlsOverlayAutoHideEnabled = true
-            title = viewModel.playerTitle.value
             // Enable seek manually since PlaybackTransportControlGlue.getSeekProvider() is null,
             // so that PlayerAdapter.seekTo(long) will be called during user seeking.
             isSeekEnabled = true

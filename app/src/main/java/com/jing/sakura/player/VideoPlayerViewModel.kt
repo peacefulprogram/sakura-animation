@@ -20,14 +20,12 @@ import java.util.regex.Pattern
 
 
 class VideoPlayerViewModel(
-    private val anime: NavigateToPlayerArg,
+    val anime: NavigateToPlayerArg,
     private val repository: WebPageRepository,
     private val videoHistoryDao: VideoHistoryDao
 ) : ViewModel() {
 
     private val TAG = VideoPlayerViewModel::class.java.simpleName
-
-    private var _animeName = ""
 
     private var _playList = emptyList<AnimePlayListEpisode>()
 
@@ -46,10 +44,10 @@ class VideoPlayerViewModel(
     val playIndex: Int
         get() = _playIndex.value
 
-    private val _playerTitle = MutableStateFlow("")
+    private val _playerSubTitle = MutableStateFlow("")
 
-    val playerTitle: MutableStateFlow<String>
-        get() = _playerTitle
+    val playerSubTitle: MutableStateFlow<String>
+        get() = _playerSubTitle
 
     private val _videoUrl = MutableStateFlow<Resource<EpisodeUrlAndHistory>>(Resource.Loading)
     val videoUrl: StateFlow<Resource<EpisodeUrlAndHistory>>
@@ -66,7 +64,7 @@ class VideoPlayerViewModel(
             _playIndex.collectLatest { index ->
                 if (index >= 0) {
                     val episode = _playList[index]
-                    _playerTitle.emit("$_animeName - ${episode.episode}")
+                    _playerSubTitle.emit(episode.episode)
                     fetchVideoUrl(episode)
                 }
             }
@@ -80,7 +78,6 @@ class VideoPlayerViewModel(
 
     fun init() {
         viewModelScope.launch {
-            _animeName = anime.animeName
             this@VideoPlayerViewModel._playList = anime.playlist
             _playIndex.emit(anime.playIndex)
         }
