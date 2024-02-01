@@ -161,7 +161,7 @@ class CategoryViewModel(
                 changedGroups[index] =
                     CategoryGroupWrapper(id = categoryRowNextId++, group = newGroup)
             } else {
-                newValues[group.key] = oldValue[group.key]!!
+                newValues[group.key] = oldValue[group.key] ?: ""
             }
         }
         newValues[key] = value

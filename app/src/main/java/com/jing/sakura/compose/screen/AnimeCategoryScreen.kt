@@ -245,6 +245,9 @@ fun VideoCategoryDialog(
         val maxTitleLength = categoryGroups.maxOfOrNull { it.group.name.length } ?: 4
         fontSizeDpValue * (maxTitleLength + 1)
     }
+    val displayGroups = remember(categoryGroups) {
+        categoryGroups.filter { it.group.categories.isNotEmpty() }
+    }
     AlertDialog(
         onDismissRequest = onApply,
         confirmButton = {},
@@ -259,9 +262,9 @@ fun VideoCategoryDialog(
                     verticalArrangement = Arrangement.spacedBy(5.dp),
                     content = {
                         items(
-                            count = categoryGroups.size,
-                            key = { categoryGroups[it].id }) { groupIndex ->
-                            val categoryGroup = categoryGroups[groupIndex].group
+                            count = displayGroups.size,
+                            key = { displayGroups[it].id }) { groupIndex ->
+                            val categoryGroup = displayGroups[groupIndex].group
                             val selectedIndex = remember {
                                 categoryGroup.categories.indexOfFirst { it.value == selectedValue[categoryGroup.key] }
                             }

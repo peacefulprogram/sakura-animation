@@ -3,6 +3,7 @@ package com.jing.sakura.extend
 import android.webkit.CookieManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.serialization.json.Json
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.Cookie
@@ -17,9 +18,15 @@ import org.jsoup.nodes.Document
 import java.io.IOException
 import java.nio.charset.Charset
 
+
+val json = Json {
+    ignoreUnknownKeys = true
+}
+
 suspend fun OkHttpClient.executeWithCoroutine(request: Request): Response {
     val def = CompletableDeferred<Result<Response>>()
-    newCall(request).enqueue(object : Callback {
+    val call = newCall(request)
+    call.enqueue(object : Callback {
         override fun onFailure(call: Call, e: IOException) {
             def.complete(Result.failure(e))
         }
@@ -28,7 +35,12 @@ suspend fun OkHttpClient.executeWithCoroutine(request: Request): Response {
             def.complete(Result.success(response))
         }
     })
-    return def.await().getOrThrow()
+    return try {
+        def.await().getOrThrow()
+    } catch (ex: CancellationException) {
+        call.cancel()
+        throw ex
+    }
 }
 
 suspend fun OkHttpClient.newRequest(
@@ -92,6 +104,11 @@ fun Response.asDocument(): Document {
     return Jsoup.parse(this.bodyString()).apply {
         setBaseUri(request.url.toString())
     }
+}
+
+
+inline fun <reified T> Response.jsonBody(): T {
+    return json.decodeFromString<T>(bodyString())
 }
 
 fun Response.bodyString(charset: Charset = Charsets.UTF_8): String {

@@ -15,6 +15,7 @@ class WebPageRepository(
     val animationSources =
         listOf(
             MxdmSource(okHttpClient),
+            HistarSource(okHttpClient),
             LibVioSource(okHttpClient),
             ChangZhangSource(okHttpClient),
             XiGuaCartoonSource(okHttpClient),
