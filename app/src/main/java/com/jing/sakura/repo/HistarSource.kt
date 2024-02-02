@@ -328,7 +328,7 @@ class HistarSource(private val okHttpClient: OkHttpClient) : AnimationSource {
 
     @Serializable
     data class HiStarVideoDetailRecommend(
-        val cards: List<VideoDetailRecommendCard> = emptyList()
+        val cards: List<VideoDetailRecommendCard>? = null
     )
 
     @Serializable

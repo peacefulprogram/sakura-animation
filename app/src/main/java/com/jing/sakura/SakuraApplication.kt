@@ -142,8 +142,8 @@ class SakuraApplication : Application(), ImageLoaderFactory {
             init(null, arrayOf(trustManager), SecureRandom())
         }.socketFactory
         return OkHttpClient.Builder()
-            .connectTimeout(10L, TimeUnit.SECONDS)
-            .readTimeout(10L, TimeUnit.SECONDS)
+            .connectTimeout(2L, TimeUnit.SECONDS)
+            .readTimeout(20L, TimeUnit.SECONDS)
             .sslSocketFactory(sslSocketFactory, trustManager)
             .hostnameVerifier { _, _ -> true }
             .addInterceptor(Interceptor { chain ->
