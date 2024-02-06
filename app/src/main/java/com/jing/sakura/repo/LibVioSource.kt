@@ -458,6 +458,6 @@ class LibVioSource(private val okHttpClient: OkHttpClient) : AnimationSource {
         }
 
     companion object {
-        const val BASE_URL = "https://www.libvio.me"
+        const val BASE_URL = "https://www.libvio.fun"
     }
 }
