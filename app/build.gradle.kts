@@ -13,8 +13,8 @@ android {
         applicationId = "com.jing.sakura"
         minSdk = 21
         targetSdk = 34
-        versionCode = 8
-        versionName = "2.3.3"
+        versionCode = 9
+        versionName = "2.3.4"
 
     }
     packaging {
@@ -106,8 +106,8 @@ dependencies {
 
     implementation("io.coil-kt:coil:2.4.0")
     implementation("io.coil-kt:coil-compose:2.4.0")
-
-    implementation("org.jsoup:jsoup:1.17.1")
+    // 升级jsoup会导致android6中崩溃
+    implementation("org.jsoup:jsoup:1.16.1")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
