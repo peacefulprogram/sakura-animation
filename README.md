@@ -1,5 +1,5 @@
 # 看动漫
-
+# 后续更新不再开源
 原**樱花动漫**, 现已支持多数据源, 改名为 **看动漫**
 
 Android TV端动漫app, 使用[jetpack compose](https://developer.android.com/training/tv/playback/compose)开发,
